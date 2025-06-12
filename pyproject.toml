@@ -9,7 +9,7 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-name = 'marinholab-papers-tro2022-adaptivecontrol'
+name = 'marinholab-working-needlemanipulation'
 authors = [
     {name = "Murilo M. Marinho", email = "murilomarinho@ieee.org"}
 ]
@@ -18,10 +18,9 @@ maintainers = [
 ]
 dynamic = ["version"]
 dependencies=[
-    'dqrobotics>=23.4.0a49',
-    'dqrobotics-interface-coppeliasim-zmq'
+    'dqrobotics>=23.4.0a49'
 ]
-description="A Python implementation of an example of 'Adaptive Constrained Kinematic Control using Partial or Complete Task-Space Measurements'"
+description="Ongoing work on needle manipulation in a collaboration between UTokyo and UoM."
 readme = "README.md"
 requires-python = ">= 3.9"
 
