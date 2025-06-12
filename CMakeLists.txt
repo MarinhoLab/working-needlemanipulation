@@ -24,27 +24,20 @@ endif()
 include_directories(
     include
     /usr/include/eigen3/
-    dqrobotics_python/cpp/include
-    dqrobotics_python/interfaces/cpp-interface-coppeliasim/include
-    submodules/qpOASES/include
-    submodules/dqrobotics/cpp-interface-qpoases/include
+    submodules/dqrobotics/cpp/include/
     )
 
-add_subdirectory(dqrobotics_python/pybind11)
+add_subdirectory(submodules/dqrobotics/python/pybind11)
 pybind11_add_module(_core MODULE
         src/core.cpp
-
+        src/M3_SerialManipulatorSimulatorFriendly.cpp
     )
 
 # CMAKE was not passing BUILD_SHARED_LIBS nicely to the add_subdirectory.
 # https://thatonegamedev.com/cpp/cmake/how-to-manage-dependencies-with-cmake/
 set(BUILD_SHARED_LIBS FALSE CACHE BOOL "x" FORCE)
 add_subdirectory(dqrobotics_python/cpp)
-include_directories(submodules/dqrobotics/cpp-interface-coppeliasim/include) # used by cpp-interface-coppeliasim-zmq
-add_subdirectory(dqrobotics_python_interface_coppeliasim_zmq/submodules/dqrobotics/cpp-interface-coppeliasim-zmq)
-add_subdirectory(cpp_version)
-add_subdirectory(submodules/qpOASES)
 
-target_link_libraries(_core PRIVATE adaptive_control dqrobotics qpOASES)
+target_link_libraries(_core PRIVATE dqrobotics)
 
 target_compile_definitions(_core PRIVATE VERSION_INFO=${PROJECT_VERSION})
