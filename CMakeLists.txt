@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15...3.26)
 
-project(adaptive_control_example_python_wrapper LANGUAGES CXX)
+project(marinholab_working_needlemanipulation LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -36,7 +36,7 @@ pybind11_add_module(_core MODULE
 # CMAKE was not passing BUILD_SHARED_LIBS nicely to the add_subdirectory.
 # https://thatonegamedev.com/cpp/cmake/how-to-manage-dependencies-with-cmake/
 set(BUILD_SHARED_LIBS FALSE CACHE BOOL "x" FORCE)
-add_subdirectory(dqrobotics_python/cpp)
+add_subdirectory(submodules/dqrobotics/python/cpp)
 
 target_link_libraries(_core PRIVATE dqrobotics)
 

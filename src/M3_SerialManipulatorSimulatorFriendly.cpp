@@ -150,4 +150,9 @@ MatrixXd M3_SerialManipulatorSimulatorFriendly::raw_pose_jacobian_derivative(con
     return J_dot;
 }
 
+std::vector<DQ_JointType> M3_SerialManipulatorSimulatorFriendly::get_supported_joint_types() const
+{
+    return {DQ_JointType::REVOLUTE};
+}
+
 }

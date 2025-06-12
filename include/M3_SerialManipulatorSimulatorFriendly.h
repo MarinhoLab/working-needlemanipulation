@@ -34,14 +34,16 @@ protected:
 public:
 
 
-    DQ_SerialManipulatorSimulatorFriendly()=delete;
-    DQ_SerialManipulatorSimulatorFriendly(const std::vector<DQ>& offset_before,
+    M3_SerialManipulatorSimulatorFriendly()=delete;
+    M3_SerialManipulatorSimulatorFriendly(const std::vector<DQ>& offset_before,
                                           const std::vector<DQ>& offset_after,
                                           const std::vector<ActuationType> actuation_types);
 
     using DQ_SerialManipulator::raw_pose_jacobian;
     using DQ_SerialManipulator::raw_pose_jacobian_derivative;
     using DQ_SerialManipulator::raw_fkm;
+
+    std::vector<DQ_JointType> get_supported_joint_types() const override;
 
     MatrixXd raw_pose_jacobian(const VectorXd& q_vec, const int& to_ith_link) const override;
     MatrixXd raw_pose_jacobian_derivative(const VectorXd& q, const VectorXd& q_dot, const int& to_ith_link) const override;
