@@ -32,7 +32,7 @@ include_directories(
 
 add_subdirectory(dqrobotics_python/pybind11)
 pybind11_add_module(_core MODULE
-    src/adaptive_control_example_py.cpp
+        src/core.cpp
 
     )
 
