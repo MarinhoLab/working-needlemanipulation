@@ -141,10 +141,9 @@ class CMakeBuild(build_ext):
 setup(
     license="MIT",
     packages=[
-        "marinholab.papers.tro2022.adaptive_control",
-        "marinholab.papers.tro2022.adaptive_control.Example_ParameterSpaceEDH"
+        "marinholab.working.needlemanipulation"
     ],
-    ext_modules=[CMakeExtension('marinholab.papers.tro2022.adaptive_control._core')],
+    ext_modules=[CMakeExtension('marinholab.working.needlemanipulation._core')],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
 )
