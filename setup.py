@@ -8,11 +8,6 @@ from pathlib import Path
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 
-# read the contents of your README file
-from pathlib import Path
-repository_root = Path(__file__).parent.parent
-long_description = (repository_root / "README.md").read_text()
-
 # Convert distutils Windows platform specifiers to CMake -A arguments
 PLAT_TO_CMAKE = {
     "win32": "Win32",
