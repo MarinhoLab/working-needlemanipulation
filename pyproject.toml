@@ -21,7 +21,7 @@ dependencies=[
     'dqrobotics>=23.4.0a49'
 ]
 description = "Ongoing work on needle manipulation in a collaboration between UTokyo and UoM."
-# readme = "README.md"
+readme = "README.md"
 requires-python = ">= 3.9"
 
 # https://pypi.org/project/setuptools-git-versioning/
