@@ -28,4 +28,6 @@ set(BUILD_SHARED_LIBS FALSE CACHE BOOL "x" FORCE)
 add_subdirectory(submodules/dqrobotics/python/cpp)
 
 target_link_libraries(_core PRIVATE dqrobotics Eigen3::Eigen)
-target_compile_definitions(_core PRIVATE VERSION_INFO=${PROJECT_VERSION})
+# Version is dynamically obtained. See pyproject.toml
+# Activating this causes issues with Windows compilation.
+# target_compile_definitions(_core PRIVATE VERSION_INFO=${PROJECT_VERSION})
