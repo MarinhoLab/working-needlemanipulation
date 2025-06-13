@@ -1,3 +1,7 @@
+"""
+(C) Copyright 2025 Murilo Marinho (murilomarinho@ieee.org)
+"""
+
 import numpy as np
 from dqrobotics import *
 from dqrobotics.utils import DQ_Geometry

@@ -1,0 +1,3 @@
+from marinholab.working.needlemanipulation import M3_SerialManipulatorSimulatorFriendly
+
+robot = M3_SerialManipulatorSimulatorFriendly()
