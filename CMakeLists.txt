@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 3.15...3.26)
+# https://pybind11.readthedocs.io/en/stable/compiling.html
+cmake_minimum_required(VERSION 3.15...3.29)
 
 if(WIN32)
     set(CMAKE_TOOLCHAIN_FILE C:/vcpkg/scripts/buildsystems/vcpkg.cmake)
@@ -16,6 +17,7 @@ include_directories(
     submodules/dqrobotics/cpp/include/
     )
 
+set(PYBIND11_FINDPYTHON ON)
 add_subdirectory(submodules/dqrobotics/python/pybind11)
 pybind11_add_module(_core MODULE
         src/core.cpp
