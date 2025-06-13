@@ -5,7 +5,7 @@ UoM-UTokyo collaboration.
 ## Installation
 
 ```
-pip install marinholab.working.needlemanipulation
+pip install marinholab-working-needlemanipulation
 ```
 
 ## Example
