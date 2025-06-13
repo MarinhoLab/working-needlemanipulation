@@ -37,6 +37,19 @@ jobs:
       - name: configure (macos)
         if: startsWith(matrix.os,'macos')
         run: brew install eigen
+      - name: Install compilation dependencies [Windows/C++]
+        if: startsWith(matrix.os,'windows')
+        run: |
+          pwd
+          echo "Setting up vcpkg..."
+          cd C:\vcpkg
+          .\bootstrap-vcpkg.bat
+          vcpkg integrate install
+          echo "Installing dependencies..."
+          .\vcpkg install eigen3:x64-windows 
+          echo "Adding symlink to vcpkg..."
+          cmd /c mklink /d c:\Tools\vcpkg c:\vcpkg
+          cd ~
       - name: build
         run: |
           python -m pip config set global.break-system-packages true
