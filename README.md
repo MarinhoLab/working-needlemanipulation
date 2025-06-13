@@ -1,4 +1,15 @@
-# working-needlemanipulation
+# Working Project: Needle Manipulation
 
+UoM-UTokyo collaboration.
 
-Adding more info to the readme to see if that solves it.
+## Installation
+
+```
+pip install marinholab.working.needlemanipulation
+```
+
+## Example
+
+```
+needlemanipulation_example
+```
