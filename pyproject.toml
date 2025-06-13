@@ -30,3 +30,6 @@ enabled = true
 # https://stackoverflow.com/questions/73605607/how-to-use-setuptools-scm
 dev_template = "{tag}.{ccount}"
 dirty_template = "{tag}.{ccount}"
+
+[project.scripts]
+needlemanipulation_example = "marinholab.working.needlemanipulation.example:main"
