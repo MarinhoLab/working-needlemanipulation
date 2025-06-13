@@ -27,7 +27,10 @@ jobs:
       - name: Build release distributions
         run: |
 
+          sudo apt-get install libeigen3-dev
+          
           git submodule update --init --recursive
+          
           python3 -m pip config set global.break-system-packages true
           python3 -m pip install --upgrade pip
           python3 -m pip install setuptools wheel setuptools-git-versioning
