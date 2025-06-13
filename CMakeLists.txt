@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.15...3.26)
 
+if(WIN32)
+    set(CMAKE_TOOLCHAIN_FILE C:/vcpkg/scripts/buildsystems/vcpkg.cmake)
+endif()
+
 project(marinholab_working_needlemanipulation LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
