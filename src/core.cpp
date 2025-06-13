@@ -50,7 +50,7 @@ PYBIND11_MODULE(_core, m) {
         :type offset_after: List[DQ]
         :param actuation_types: A list of M3_SerialManipulatorSimulatorFriendly.ActuationType denoting the actuation
                                 type and axis of each joint.
-        :type f: List[M3_SerialManipulatorSimulatorFriendly.ActuationType]
+        :type actuation_types: List[M3_SerialManipulatorSimulatorFriendly.ActuationType]
         :rtype: M3_SerialManipulatorSimulatorFriendly
     )coredoc");
     ///Methods
