@@ -1,33 +1,91 @@
-# This workflow will upload a Python Package to PyPI when a release is created
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python#publishing-to-package-registries
+name: Build and Upload Python Packages
 
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
-name: Upload Python Package
-
-on: [push,workflow_dispatch]
-
-permissions:
-  contents: read
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
-  release-build:
-    runs-on: ubuntu-latest
+  build:
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: ['ubuntu-22.04', 'macos-latest', 'ubuntu-22.04-arm', 'windows-latest']
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+        exclude:
+        # Python 3.13.4 seems to have a bug in Windows (as of June 13, 2025)
+        # https://github.com/python/cpython/issues/135151
+         - os: windows-latest
+           python-version: '3.13'
+
+    permissions:
+      id-token: write
 
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-
-      - name: Build release distributions
+      - uses: actions/checkout@v3
+      - name: init submodules
         run: |
-          
-          python3 -m pip config set global.break-system-packages true
-          python3 -m pip install --upgrade pip
-          python3 -m pip install setuptools wheel setuptools-git-versioning
-          python3 -m pip install .
+          git submodule update --init --recursive
+          git fetch --prune --unshallow
+      - name: Set up Python ${{ matrix.python-version }} (Github Hosted VMs)
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: configure (Ubuntu)
+        if: startsWith(matrix.os,'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install libeigen3-dev
+      - name: configure (macos)
+        if: startsWith(matrix.os,'macos')
+        run: brew install eigen
+      - name: Install compilation dependencies [Windows/C++]
+        if: startsWith(matrix.os,'windows')
+        run: |
+          pwd
+          echo "Setting up vcpkg..."
+          cd C:\vcpkg
+          .\bootstrap-vcpkg.bat
+          vcpkg integrate install
+          echo "Installing dependencies..."
+          .\vcpkg install eigen3:x64-windows 
+          echo "Adding symlink to vcpkg..."
+          cmd /c mklink /d c:\Tools\vcpkg c:\vcpkg
+          cd ~
+      - name: build
+        run: |
+          python -m pip config set global.break-system-packages true
+          python -m pip install --upgrade pip
+          python -m pip install setuptools wheel setuptools-git-versioning
+          python setup.py bdist_wheel
+      - name: Rename wheel (MacOS only)
+        if: startsWith(matrix.os,'macos')
+        run: |
+          brew install rename
+          cd dist
+          sw_vers
+          rename 's/11_0/10_14/' *
+          rename 's/12_0/10_15/' *
+          rename 's/universal2/arm64/' *
+          cd ..
+          cd ..
+      - name: Rename wheel (Ubuntu Only)
+        if: startsWith(matrix.os,'ubuntu')
+        run: |
+          sudo apt-get install rename
+          cd dist
+          ls -lah
+          rename 's/linux/manylinux2014/' *
+          cd ..
+          cd ..
+      - name: Publish to PyPi
+        env:
+          TWINE_USERNAME: '__token__'
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        if: github.ref == 'refs/heads/main'
+        run: |
+          python -m pip install twine 
+          twine upload dist/*

@@ -8,11 +8,6 @@ from pathlib import Path
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 
-# read the contents of your README file
-from pathlib import Path
-repository_root = Path(__file__).parent.parent
-long_description = (repository_root / "README.md").read_text()
-
 # Convert distutils Windows platform specifiers to CMake -A arguments
 PLAT_TO_CMAKE = {
     "win32": "Win32",
@@ -53,8 +48,7 @@ class CMakeBuild(build_ext):
         cmake_args = [
             f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}{os.sep}",
             f"-DPYTHON_EXECUTABLE={sys.executable}",
-            f"-DCMAKE_BUILD_TYPE={cfg}",  # not used on MSVC, but no harm
-            "-DCMAKE_POLICY_VERSION_MINIMUM=3.5" # Because of outdated qpOASES minimum version.
+            f"-DCMAKE_BUILD_TYPE={cfg}"  # not used on MSVC, but no harm
         ]
         build_args = []
         # Adding CMake arguments set as environment variable

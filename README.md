@@ -1,3 +1,15 @@
-# working-needlemanipulation
+# Working Project: Needle Manipulation
 
-Hi hi is this being considered empty?
+UoM-UTokyo collaboration.
+
+## Installation
+
+```
+pip install marinholab-working-needlemanipulation
+```
+
+## Example
+
+```
+needlemanipulation_example
+```

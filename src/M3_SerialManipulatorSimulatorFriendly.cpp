@@ -9,7 +9,7 @@ namespace DQ_robotics
 
 M3_SerialManipulatorSimulatorFriendly::M3_SerialManipulatorSimulatorFriendly(const std::vector<DQ> &offset_before,
                                                                              const std::vector<DQ> &offset_after,
-                                                                             const std::vector<ActuationType> actuation_types):
+                                                                             const std::vector<ActuationType>& actuation_types):
     DQ_SerialManipulator(actuation_types.size()),
     offset_before_(offset_before),
     offset_after_(offset_after),
@@ -76,6 +76,7 @@ DQ M3_SerialManipulatorSimulatorFriendly::_get_w(const int &ith) const
     case ActuationType::TX:
         return E_*i_;
     }
+    throw std::runtime_error("Invalid actuation");
 }
 
 DQ  M3_SerialManipulatorSimulatorFriendly::raw_fkm(const VectorXd& q_vec, const int& to_ith_link) const

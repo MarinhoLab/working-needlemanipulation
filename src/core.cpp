@@ -18,13 +18,41 @@ using namespace DQ_robotics;
 
 PYBIND11_MODULE(_core, m) {
 
+    m.doc() = R"coredoc(
+        marinholab.working.needlemanipulation
+        -------------------------------------
+
+        .. currentmodule:: needlemanipulation
+
+        .. autosummary::
+           :toctree: _generate
+
+           M3_SerialManipulatorSimulatorFriendly
+    )coredoc";
+
     py::class_<
         M3_SerialManipulatorSimulatorFriendly,
         std::shared_ptr<M3_SerialManipulatorSimulatorFriendly>,
         DQ_SerialManipulator
         > dqserialmanipulatorsimulatorfriendly_py(m, "M3_SerialManipulatorSimulatorFriendly");
-    dqserialmanipulatorsimulatorfriendly_py.def(py::init<std::vector<DQ>,std::vector<DQ>,std::vector<M3_SerialManipulatorSimulatorFriendly::ActuationType>>());
 
+    //M3_SerialManipulatorSimulatorFriendly(const std::vector<DQ>& offset_before,
+    //                                      const std::vector<DQ>& offset_after,
+    //                                      const std::vector<ActuationType>& actuation_types);
+    dqserialmanipulatorsimulatorfriendly_py.def(py::init<std::vector<DQ>,std::vector<DQ>,std::vector<M3_SerialManipulatorSimulatorFriendly::ActuationType>>(),
+    py::arg("offset_before"),py::arg("offset_after"),py::arg("actuation_types"),
+    R"coredoc(
+        The M3_SerialManipulatorSimulatorFriendly constructor.
+
+        :param offset_before: A list of DQ representing the offset of each joint transformation before actuation.
+        :type offset_before: List[DQ]
+        :param offset_after: A list of DQ representing the offset of each joint transformation after actuation.
+        :type offset_after: List[DQ]
+        :param actuation_types: A list of M3_SerialManipulatorSimulatorFriendly.ActuationType denoting the actuation
+                                type and axis of each joint.
+        :type actuation_types: List[M3_SerialManipulatorSimulatorFriendly.ActuationType]
+        :rtype: M3_SerialManipulatorSimulatorFriendly
+    )coredoc");
     ///Methods
     //Overrides from DQ_SerialManipulator
     dqserialmanipulatorsimulatorfriendly_py.def("raw_pose_jacobian",  (MatrixXd (M3_SerialManipulatorSimulatorFriendly::*)(const VectorXd&, const int&) const)&M3_SerialManipulatorSimulatorFriendly::raw_pose_jacobian, "Retrieves the raw pose Jacobian.");
@@ -33,12 +61,12 @@ PYBIND11_MODULE(_core, m) {
                                                                                     &M3_SerialManipulatorSimulatorFriendly::raw_pose_jacobian_derivative, "Retrieves the raw pose Jacobian derivative.");
 
     py::enum_<M3_SerialManipulatorSimulatorFriendly::ActuationType>(dqserialmanipulatorsimulatorfriendly_py, "ActuationType")
-        .value("RZ", M3_SerialManipulatorSimulatorFriendly::ActuationType::RZ)
-        .value("RY", M3_SerialManipulatorSimulatorFriendly::ActuationType::RY)
-        .value("RX", M3_SerialManipulatorSimulatorFriendly::ActuationType::RX)
-        .value("TZ", M3_SerialManipulatorSimulatorFriendly::ActuationType::TZ)
-        .value("TY", M3_SerialManipulatorSimulatorFriendly::ActuationType::TY)
-        .value("TX", M3_SerialManipulatorSimulatorFriendly::ActuationType::TX)
+        .value("RZ", M3_SerialManipulatorSimulatorFriendly::ActuationType::RZ, "Revolution about the z-axis")
+        .value("RY", M3_SerialManipulatorSimulatorFriendly::ActuationType::RY, "Revolution about the y-axis")
+        .value("RX", M3_SerialManipulatorSimulatorFriendly::ActuationType::RX, "Revolution about the x-axis")
+        .value("TZ", M3_SerialManipulatorSimulatorFriendly::ActuationType::TZ,  "Translation along the z-axis")
+        .value("TY", M3_SerialManipulatorSimulatorFriendly::ActuationType::TY,  "Translation along the y-axis")
+        .value("TX", M3_SerialManipulatorSimulatorFriendly::ActuationType::TX,  "Translation along the x-axis")
         .export_values();
 
 

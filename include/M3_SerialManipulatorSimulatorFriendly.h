@@ -37,7 +37,7 @@ public:
     M3_SerialManipulatorSimulatorFriendly()=delete;
     M3_SerialManipulatorSimulatorFriendly(const std::vector<DQ>& offset_before,
                                           const std::vector<DQ>& offset_after,
-                                          const std::vector<ActuationType> actuation_types);
+                                          const std::vector<ActuationType>& actuation_types);
 
     using DQ_SerialManipulator::raw_pose_jacobian;
     using DQ_SerialManipulator::raw_pose_jacobian_derivative;

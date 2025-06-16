@@ -20,7 +20,7 @@ dynamic = ["version"]
 dependencies=[
     'dqrobotics>=23.4.0a49'
 ]
-description="Ongoing work on needle manipulation in a collaboration between UTokyo and UoM."
+description = "Ongoing work on needle manipulation in a collaboration between UTokyo and UoM."
 readme = "README.md"
 requires-python = ">= 3.9"
 
@@ -30,3 +30,6 @@ enabled = true
 # https://stackoverflow.com/questions/73605607/how-to-use-setuptools-scm
 dev_template = "{tag}.{ccount}"
 dirty_template = "{tag}.{ccount}"
+
+[project.scripts]
+needlemanipulation_example = "marinholab.working.needlemanipulation.example:main"
