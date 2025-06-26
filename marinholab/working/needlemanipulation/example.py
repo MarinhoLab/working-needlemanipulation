@@ -1,5 +1,4 @@
 from dqrobotics import *
-
 from marinholab.working.needlemanipulation import M3_SerialManipulatorSimulatorFriendly
 try:
     from matplotlib import pyplot as plt

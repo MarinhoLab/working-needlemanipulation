@@ -24,6 +24,9 @@ description = "Ongoing work on needle manipulation in a collaboration between UT
 readme = "README.md"
 requires-python = ">= 3.9"
 
+[tool.setuptools.package-data]
+mypkg = ["*.yaml"]
+
 # https://pypi.org/project/setuptools-git-versioning/
 [tool.setuptools-git-versioning]
 enabled = true
@@ -33,3 +36,4 @@ dirty_template = "{tag}.{ccount}"
 
 [project.scripts]
 needlemanipulation_example = "marinholab.working.needlemanipulation.example:main"
+needlemanipulation_example_load_from_file = "marinholab.working.needlemanipulation.example_load_from_file:main"
