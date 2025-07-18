@@ -106,8 +106,8 @@ MatrixXd M3_SerialManipulatorSimulatorFriendly::raw_pose_jacobian(const VectorXd
     for(int i=0;i<to_ith_link+1;i++)
     {
         DQ w = _get_w(i);
-        DQ z = 0.5*Ad(x,w);
-        x = x*_joint_transformation(q_vec(i),i);
+        DQ z = 0.5 * Ad(x * offset_before_.at(i), w);
+        x = x*_joint_transformation(q_vec(i), i);
         DQ j = z * x_effector;
         J.col(i)= vec8(j);
     }
