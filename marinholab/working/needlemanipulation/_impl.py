@@ -1,5 +1,6 @@
 """
-(C) Copyright 2025 Murilo Marinho (murilomarinho@ieee.org)
+Copyright (C) 2025 Murilo Marques Marinho (www.murilomarinho.info)
+LGPLv3 License
 """
 
 import numpy as np

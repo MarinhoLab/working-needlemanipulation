@@ -2,7 +2,7 @@
 Copyright (C) 2020-25 Murilo Marques Marinho (www.murilomarinho.info)
 LGPLv3 License
 """
-from dqrobotics.robot_modeling import DQ_Kinematics
+from dqrobotics.robot_modeling import DQ_Kinematics, DQ_SerialManipulator
 from dqrobotics.utils import DQ_Geometry
 from dqrobotics import *
 from dqrobotics.solvers import DQ_QuadprogSolver
@@ -20,14 +20,14 @@ class ICRA19TaskSpaceController:
     """
 
     def __init__(self,
-                 kinematics: DQ_Kinematics,
+                 kinematics: DQ_SerialManipulator,
                  gain: float,
                  damping: float,
                  alpha: float,
                  rcm_constraints: list[tuple[DQ, float]]):
         """
         Initialize the controller.
-        :param kinematics: A suitable DQ_Kinematics object.
+        :param kinematics: A suitable DQ_SerialManipulator object.
         :param gain: A positive float. Controller proportional gain.
         :param damping: A positive float. Damping factor.
         :param alpha: A float between 0 and 1. Soft priority between translation and rotation.
@@ -36,13 +36,14 @@ class ICRA19TaskSpaceController:
         """
 
         self.qp_solver = DQ_QuadprogSolver()
-        self.kinematics: DQ_Kinematics = kinematics
+        self.kinematics: DQ_SerialManipulator = kinematics
         self.gain: float = gain
         self.damping: float = damping
         self.alpha: float = alpha
         self.rcm_constraints: list[tuple[DQ, float]] = rcm_constraints
 
         self.last_x: np.array = None
+        self.last_error: np.array = None
 
     def get_last_robot_pose(self) -> DQ:
         """
@@ -54,6 +55,10 @@ class ICRA19TaskSpaceController:
         :rtype: DQ
         """
         return self.last_x
+
+    def get_last_error(self) -> np.array:
+        return self.last_error
+
 
     @staticmethod
     def get_rcm_constraint(Jx: np.array, x: DQ, primitive: DQ,
@@ -126,6 +131,8 @@ class ICRA19TaskSpaceController:
         # Calculate errors
         et = vec4(translation(x) - translation(xd))
         er = ICRA19TaskSpaceController._get_rotation_error(x, xd)
+
+        self.last_error = np.vstack((er, et))
 
         # Get the Translation Jacobian and Rotation Jacobian
         Jx = self.kinematics.pose_jacobian(q)

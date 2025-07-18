@@ -1,3 +1,7 @@
+"""
+Copyright (C) 2025 Murilo Marques Marinho (www.murilomarinho.info)
+LGPLv3 License
+"""
 from dqrobotics import *
 from marinholab.working.needlemanipulation import M3_SerialManipulatorSimulatorFriendly
 try:

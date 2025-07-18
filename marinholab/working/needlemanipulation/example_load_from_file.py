@@ -1,13 +1,35 @@
+"""
+Copyright (C) 2025 Murilo Marques Marinho (www.murilomarinho.info)
+LGPLv3 License
+"""
 from importlib.resources import files
 import yaml
 from dqrobotics import *
 from marinholab.working.needlemanipulation import M3_SerialManipulatorSimulatorFriendly
 from marinholab.working.needlemanipulation.icra2019_controller import ICRA19TaskSpaceController
 try:
-    from matplotlib import pyplot as plt
     import dqrobotics_extensions.pyplot as dqp
+    from matplotlib import pyplot as plt
+    import matplotlib.animation as anm  # Matplotlib animation
+    from functools import partial  # Need to call functions correctly for matplotlib animations
 except ImportError:
     dqp = None
+
+def _set_plot_labels():
+    ax = plt.gca()
+    ax.set(
+        xlabel='x [m]',
+        ylabel='y [m]',
+        zlabel='z [m]'
+    )
+
+def _set_plot_limits(lmin: float = -0.5, lmax: float = 0.5):
+    ax = plt.gca()
+    ax.set(
+        xlim=[lmin, lmax],
+        ylim=[lmin, lmax],
+        zlim=[lmin, lmax]
+    )
 
 def get_information_from_file(file_contents: str) -> (M3_SerialManipulatorSimulatorFriendly, tuple[DQ, float], tuple[DQ, float]):
     """
@@ -44,6 +66,27 @@ def get_information_from_file(file_contents: str) -> (M3_SerialManipulatorSimula
     }
 
     return robot, rcm1, rcm2
+
+
+# Animation function
+def animate_robot(n, robot, stored_qs, stored_time):
+    """
+    Create an animation function compatible with `plt`.
+    Adapted from https://marinholab.github.io/OpenExecutableBooksRobotics//lesson-dq8-optimization-based-robot-control.
+    :param n: The frame number, necessary for `pyplot`.
+    :param robot: The `DQ_SerialManipulator` instance.
+    :param stored_qs: The sequence of joint configurations.
+    :param stored_time: The sequence of timepoints to plot in the title.
+    """
+    plt.cla()
+    _set_plot_limits(-1.0, 1.0)
+    _set_plot_labels()
+    plt.title(f'Joint control time={stored_time[n]:.2f} s out of {stored_time[-1]:.2f} s')
+
+    dqp.plot(robot, q=stored_qs[n],
+             line_color='b',
+             cylinder_color="c",
+             cylinder_alpha=0.3)
 
 def example_plot(q, robot, rcm1, rcm2):
     """
@@ -88,14 +131,24 @@ def main():
         q_init = [0, 0, 0, 0, 0, 0, 0, 0, 0]
         x_init = lrobot.fkm(q_init)
 
+        time_final = 60.0
+        time = 0
+
         if dqp is not None:
-            example_plot(q_init, lrobot, lrcm1, lrcm2)
+            # Store the control signals
+            stored_qs = []
+            stored_time = []
 
         # Loop parameters
         sampling_time = 0.008
 
         q = q_init
-        while True:
+        while time < time_final:
+            if dqp is not None:
+                # Store data for posterior animation
+                stored_qs.append(q)
+                stored_time.append(time)
+
             xd = x_init # Replace this with your xd calculation
 
             # Solve the quadratic program
@@ -103,8 +156,28 @@ def main():
 
             # Update the current joint positions
             q = q + u * sampling_time
+            time = time + sampling_time
+
+        if dqp is not None:
+            # Set up the plot
+            fig = plt.figure(dpi=200, figsize=(12, 10))
+            plt.axes(projection='3d')
+
+            print(f"The size of the log is {len(stored_qs)}")
+            anim = anm.FuncAnimation(fig,
+                                     partial(animate_robot,
+                                             robot=lrobot,
+                                             stored_qs=stored_qs,
+                                             stored_time=stored_time),
+                                     interval=1,
+                                     frames=len(stored_qs))
+
+            anim.save("output_moving_manipulators.mp4", fps=60)
+
     except KeyboardInterrupt:
         print("main::KeyboardInterrupt")
+
+
 
 if __name__ == '__main__':
     main()

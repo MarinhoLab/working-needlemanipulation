@@ -38,3 +38,4 @@ dirty_template = "{tag}.{ccount}"
 [project.scripts]
 needlemanipulation_example = "marinholab.working.needlemanipulation.example:main"
 needlemanipulation_example_load_from_file = "marinholab.working.needlemanipulation.example_load_from_file:main"
+needlemanipulation_example_kinematics_from_coppeliasim = "marinholab.working.needlemanipulation.example_kinematics_from_coppeliasim:main"
