@@ -151,17 +151,18 @@ class ICRA19TaskSpaceController:
         f = self.alpha * ft + (1.0 - self.alpha) * fr
 
         # RCM constraints
-        W = None
-        w = None
-        for constraint in self.rcm_constraints:
-            p, r = constraint
-            W_c, w_c = self.get_rcm_constraint(Jx, x, k_, p, r, 0.1)
-            if W is None:
-                W = W_c
-                w = w_c
-            else:
-                W = np.vstack((W, W_c))
-                w = np.vstack((w, w_c))
+        if self.rcm_constraints is not None:
+            W = None
+            w = None
+            for constraint in self.rcm_constraints:
+                p, r = constraint
+                W_c, w_c = self.get_rcm_constraint(Jx, x, k_, p, r, 0.1)
+                if W is None:
+                    W = W_c
+                    w = w_c
+                else:
+                    W = np.vstack((W, W_c))
+                    w = np.vstack((w, w_c))
 
         # Solve the quadratic program
         u = self.qp_solver.solve_quadratic_program(H, f, W, np.squeeze(w), None, None)
