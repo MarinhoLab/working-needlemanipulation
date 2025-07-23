@@ -22,7 +22,7 @@ def needle_jacobian(Jx_needle, x_needle: DQ, p_vessel: DQ):
     # static MatrixXd point_to_point_distance_jacobian(const MatrixXd& translation_jacobian, const DQ& robot_point, const DQ& workspace_point);
     Jradius = DQ_Kinematics.point_to_point_distance_jacobian(Jt_needle, p_needle, p_vessel)
     # static MatrixXd plane_jacobian(const MatrixXd& pose_jacobian, const DQ& pose, const DQ& plane_normal);
-    Jpi_needle = DQ_Kinematics.plane_jacobian(Jx_needle, x_needle, i_)
+    Jpi_needle = DQ_Kinematics.plane_jacobian(Jx_needle, x_needle, k_)
     # static MatrixXd plane_to_point_distance_jacobian(const MatrixXd& plane_jacobian, const DQ& workspace_point);
     Jpi_needle = DQ_Kinematics.plane_to_point_distance_jacobian(Jpi_needle, p_vessel)
     return np.vstack((Jradius, Jpi_needle))
@@ -42,7 +42,7 @@ def needle_entry_error(x_needle: DQ, p_vessel: DQ, needle_radius: float):
     radius_error = current_radius_squared - needle_radius_squared
 
     r_needle = rotation(x_needle)
-    n_needle = r_needle * i_ * conj(r_needle)
+    n_needle = r_needle * k_ * conj(r_needle)
     d_needle = dot(p_needle, n_needle)
     pi_needle = n_needle + E_ * d_needle
     current_plane_distance = DQ_Geometry.point_to_plane_distance(p_vessel, pi_needle)
