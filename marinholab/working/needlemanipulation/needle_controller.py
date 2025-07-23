@@ -44,7 +44,7 @@ class NeedleController(ICRA19TaskSpaceController):
         # The relative transformation of the needle is time-constant
         x = self.last_x
         Jx = self.last_Jx
-        Jx_needle = haminus8(self.relative_needle_pose) * Jx
+        Jx_needle = haminus8(self.relative_needle_pose) @ Jx
         x_needle = x * self.relative_needle_pose
 
         # VFI-related Jacobian
@@ -56,7 +56,7 @@ class NeedleController(ICRA19TaskSpaceController):
 
         # VFI
         W_needle = np.array(J_needle)
-        w_needle = np.array([0.1 * D_tilde])
+        w_needle = np.array([0.1 * D_tilde]).reshape((2, 1))
 
         if W is not None and w is not None:
             W = np.vstack((W, W_needle))
