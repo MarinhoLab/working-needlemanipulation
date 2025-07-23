@@ -135,7 +135,8 @@ class CMakeBuild(build_ext):
 setup(
     license="MIT",
     packages=[
-        "marinholab.working.needlemanipulation"
+        "marinholab.working.needlemanipulation",
+        "marinholab-stubs.working.needlemanipulation"
     ],
     ext_modules=[CMakeExtension('marinholab.working.needlemanipulation._core')],
     cmdclass={"build_ext": CMakeBuild},
