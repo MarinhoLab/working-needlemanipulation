@@ -2,7 +2,6 @@
 Copyright (C) 2025 Murilo Marques Marinho (www.murilomarinho.info)
 LGPLv3 License
 """
-from typing import override
 import numpy as np
 
 from marinholab.working.needlemanipulation.icra2019_controller import ICRA19TaskSpaceController
@@ -27,7 +26,6 @@ class NeedleController(ICRA19TaskSpaceController):
         self.vessel_position = vessel_position
         self.needle_radius = needle_radius
 
-    @override
     def compute_setpoint_control_signal(self, q, xd) -> np.array:
         """
         Get the control signal for the next step as the result of the constrained optimization.
