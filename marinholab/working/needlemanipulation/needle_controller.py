@@ -5,7 +5,7 @@ LGPLv3 License
 from typing import override
 import numpy as np
 
-from icra2019_controller import ICRA19TaskSpaceController
+from marinholab.working.needlemanipulation.icra2019_controller import ICRA19TaskSpaceController
 from dqrobotics import *
 from dqrobotics.robot_modeling import DQ_SerialManipulator
 
