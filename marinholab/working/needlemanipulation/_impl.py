@@ -37,14 +37,14 @@ def needle_entry_error(x_needle: DQ, p_vessel: DQ, needle_radius: float):
     """
     p_needle = translation(x_needle)
     # Just as a reminder, our Jacobians use the squared distance so keep that in mind
-    current_radius_squared = DQ_Geometry.point_to_point_squared_distance(t, p_vessel)
+    current_radius_squared = DQ_Geometry.point_to_point_squared_distance(p_needle, p_vessel)
     needle_radius_squared = needle_radius ** 2
     radius_error = current_radius_squared - needle_radius_squared
 
     r_needle = rotation(x_needle)
     n_needle = r_needle * i_ * conj(r_needle)
     d_needle = dot(p_needle, n_needle)
-    pi_needle = n_needle + E_*d_needle
+    pi_needle = n_needle + E_ * d_needle
     current_plane_distance = DQ_Geometry.point_to_plane_distance(p_vessel, pi_needle)
     plane_error = current_plane_distance - 0
     return np.vstack((radius_error, plane_error))

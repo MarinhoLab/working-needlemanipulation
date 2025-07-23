@@ -43,6 +43,7 @@ class ICRA19TaskSpaceController:
         self.rcm_constraints: list[tuple[DQ, float]] = rcm_constraints
 
         self.last_x: np.array = None
+        self.last_Jx: np.array = None
         self.last_error: np.array = None
 
     def get_last_robot_pose(self) -> DQ:
@@ -110,18 +111,7 @@ class ICRA19TaskSpaceController:
 
         return W, w
 
-    def compute_setpoint_control_signal(self, q, xd) -> np.array:
-        """
-        Get the control signal for the next step as the result of the constrained optimization.
-        Joint limits are currently not considered.
-        :param q: The current joint positions.
-        :param xd: The desired pose.
-        :return: The desired joint positions that should be sent to the robot.
-        """
-        if not is_unit(xd):
-            raise Exception("ICRA19TaskSpaceController::compute_setpoint_control_signal::xd should be an unit dual "
-                            "quaternion")
-
+    def _get_optimization_parameters(self, q, xd):
         DOF = len(q)
 
         # Get current pose information
@@ -136,6 +126,7 @@ class ICRA19TaskSpaceController:
 
         # Get the Translation Jacobian and Rotation Jacobian
         Jx = self.kinematics.pose_jacobian(q)
+        self.last_Jx = Jx
         rd = rotation(xd)
         Jr = DQ_Kinematics.rotation_jacobian(Jx)
         Nr = haminus4(rd) @ C4() @ Jr
@@ -170,6 +161,23 @@ class ICRA19TaskSpaceController:
                 else:
                     W = np.vstack((W, W_c))
                     w = np.vstack((w, w_c))
+
+        return H, f, W, w
+
+    def compute_setpoint_control_signal(self, q, xd) -> np.array:
+        """
+        Get the control signal for the next step as the result of the constrained optimization.
+        Joint limits are currently not considered.
+        :param q: The current joint positions.
+        :param xd: The desired pose.
+        :return: The desired joint positions that should be sent to the robot.
+        """
+        DOF = len(q)
+        if not is_unit(xd):
+            raise Exception("ICRA19TaskSpaceController::compute_setpoint_control_signal::xd should be an unit dual "
+                            "quaternion")
+
+        H, f, W, w = self._get_optimization_parameters(q, xd)
 
         # Solve the quadratic program
         if W is not None:

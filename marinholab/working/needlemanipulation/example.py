@@ -4,6 +4,7 @@ LGPLv3 License
 """
 from dqrobotics import *
 from marinholab.working.needlemanipulation import M3_SerialManipulatorSimulatorFriendly
+
 try:
     from matplotlib import pyplot as plt
     import dqrobotics_extensions.pyplot as dqp
@@ -49,8 +50,6 @@ def main():
         ax.set_zlim((-plot_size, plot_size))
         dqp.plot(robot, q=q)
         plt.show(block=True)
-
-
 
 if __name__ == "__main__":
     main()
