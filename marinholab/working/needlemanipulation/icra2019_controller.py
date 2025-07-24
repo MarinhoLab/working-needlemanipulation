@@ -159,7 +159,16 @@ class ICRA19TaskSpaceController:
                 p, r, idx = constraint
                 Jx_idx = self.kinematics.pose_jacobian(q, idx)
                 x_idx = self.kinematics.fkm(q, idx)
-                W_c, w_c = self.get_rcm_constraint(Jx_idx, x_idx, k_, p, r, 0.1)
+
+                W_c_idx, w_c_idx = self.get_rcm_constraint(Jx_idx, x_idx, k_, p, r, 0.1)
+
+                # Full matrix and vector
+                W_c = np.zeros((DOF,DOF))
+                w_c = np.zeros(DOF)
+                # Add the current partial results
+                W_c[0:idx+1] = W_c_idx
+                w_c[0:idx+1] = w_c_idx
+
                 if W is None:
                     W = W_c
                     w = w_c
