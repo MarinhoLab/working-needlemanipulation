@@ -56,11 +56,11 @@ class NeedleController(ICRA19TaskSpaceController):
 
         # VFI
         W_needle = np.array(J_needle)
-        w_needle = np.array([0.1 * D_tilde]).reshape((2, 1))
+        w_needle = np.array([0.1 * D_tilde]).reshape((2,))
 
         if W is not None and w is not None:
             W = np.vstack((W, W_needle))
-            w = np.vstack((w, w_needle))
+            w = np.hstack((w, w_needle))
         else:
             W = W_needle
             w = w_needle
