@@ -151,9 +151,15 @@ class ICRA19TaskSpaceController:
         H = self.alpha * Ht + (1.0 - self.alpha) * Hr + Hd
         f = self.alpha * ft + (1.0 - self.alpha) * fr
 
+        # Joint limits
+        lower_joint_limits = self.kinematics.get_lower_q_limit()
+        upper_joint_limits = self.kinematics.get_upper_q_limit()
+        W_jl = np.vstack((-1.0 * np.eye(DOF, DOF), np.eye(DOF, DOF)))
+        w_jl = np.hstack((-1.0 * (lower_joint_limits - q), 1.0 * (upper_joint_limits - q)))
+
         # RCM constraints
-        W = None
-        w = None
+        W = W_jl
+        w = w_jl
         if self.rcm_constraints is not None:
             for constraint in self.rcm_constraints:
                 p, r, idx = constraint
