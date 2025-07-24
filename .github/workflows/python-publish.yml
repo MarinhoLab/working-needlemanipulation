@@ -62,7 +62,6 @@ jobs:
           mkdir -p marinholab-stubs
           pybind11-stubgen marinholab.working.needlemanipulation --output-dir stubs_temp
           cp -r stubs_temp/marinholab/ marinholab-stubs
-          ls marinholab-stubs/*.*
           pip uninstall marinholab-working-needlemanipulation -y
       - name: build
         run: |
