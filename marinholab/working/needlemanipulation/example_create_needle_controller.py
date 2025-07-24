@@ -17,8 +17,8 @@ def main():
         damping=0.01,
         alpha=0.999,
         rcm_constraints=[
-            (lrcm1["position"], lrcm1["radius"]),
-            (lrcm2["position"], lrcm2["radius"])],
+            (lrcm1["position"], lrcm1["radius"], 6),
+            (lrcm2["position"], lrcm2["radius"], 6)],
         relative_needle_pose=DQ([1]),
         vessel_position=DQ([1,2,3]),
         needle_radius=0.003

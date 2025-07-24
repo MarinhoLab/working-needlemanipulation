@@ -16,7 +16,7 @@ class NeedleController(ICRA19TaskSpaceController):
                  gain: float,
                  damping: float,
                  alpha: float,
-                 rcm_constraints: list[tuple[DQ, float]],
+                 rcm_constraints: list[tuple[DQ, float, int]],
                  relative_needle_pose: DQ,
                  vessel_position: DQ,
                  needle_radius: float):

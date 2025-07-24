@@ -24,15 +24,15 @@ class ICRA19TaskSpaceController:
                  gain: float,
                  damping: float,
                  alpha: float,
-                 rcm_constraints: list[tuple[DQ, float]]):
+                 rcm_constraints: list[tuple[DQ, float, int]]):
         """
         Initialize the controller.
         :param kinematics: A suitable DQ_SerialManipulator object.
         :param gain: A positive float. Controller proportional gain.
         :param damping: A positive float. Damping factor.
         :param alpha: A float between 0 and 1. Soft priority between translation and rotation.
-        :param rcm_constraints: A list of tuples (p, r), where p is the position of the constraint as a pure quaternion
-        and r is the radius of the constraint.
+        :param rcm_constraints: A list of tuples (p, r, ith), where p is the position of the constraint as a pure quaternion
+        r is the radius of the constraint, and ith is the index of the joint this constraint relates to.
         """
 
         self.qp_solver = DQ_QuadprogSolver()
@@ -40,7 +40,7 @@ class ICRA19TaskSpaceController:
         self.gain: float = gain
         self.damping: float = damping
         self.alpha: float = alpha
-        self.rcm_constraints: list[tuple[DQ, float]] = rcm_constraints
+        self.rcm_constraints: list[tuple[DQ, float, int]] = rcm_constraints
 
         self.last_x: np.array = None
         self.last_Jx: np.array = None
@@ -62,8 +62,11 @@ class ICRA19TaskSpaceController:
 
 
     @staticmethod
-    def get_rcm_constraint(Jx: np.array, x: DQ, primitive: DQ,
-                           p: DQ, d_safe: float,
+    def get_rcm_constraint(Jx: np.array,
+                           x: DQ,
+                           primitive: DQ,
+                           p: DQ,
+                           d_safe: float,
                            eta_d: float,
                            ) -> (np.array, np.array):
         """
@@ -153,8 +156,10 @@ class ICRA19TaskSpaceController:
         w = None
         if self.rcm_constraints is not None:
             for constraint in self.rcm_constraints:
-                p, r = constraint
-                W_c, w_c = self.get_rcm_constraint(Jx, x, k_, p, r, 0.1)
+                p, r, idx = constraint
+                Jx_idx = self.kinematics.pose_jacobian(q, idx)
+                x_idx = self.kinematics.fkm(q, idx)
+                W_c, w_c = self.get_rcm_constraint(Jx_idx, x_idx, k_, p, r, 0.1)
                 if W is None:
                     W = W_c
                     w = w_c
