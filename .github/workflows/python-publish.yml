@@ -55,14 +55,14 @@ jobs:
           echo "Adding symlink to vcpkg..."
           cmd /c mklink /d c:\Tools\vcpkg c:\vcpkg
           cd ~
-      - name: Generate Stubs
-        run: |
-          pip install pybind11-stubgen
-          pip install .
-          mkdir -p marinholab-stubs
-          pybind11-stubgen marinholab.working.needlemanipulation --output-dir stubs_temp
-          cp -r stubs_temp/marinholab/ marinholab-stubs
-          pip uninstall marinholab-working-needlemanipulation -y
+      #- name: Generate Stubs
+      #  run: |
+      #    pip install pybind11-stubgen
+      #    pip install .
+      #    mkdir -p marinholab-stubs
+      #    pybind11-stubgen marinholab.working.needlemanipulation --output-dir stubs_temp
+      #    cp -r stubs_temp/marinholab/ marinholab-stubs
+      #    pip uninstall marinholab-working-needlemanipulation -y
       - name: build
         run: |
           python -m pip config set global.break-system-packages true
