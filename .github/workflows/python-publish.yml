@@ -8,8 +8,38 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
+  build_stubs:
+    runs-on: ubuntu-latest
 
+    steps:
+      - uses: actions/checkout@v3
+      - name: init submodules
+        run: |
+          git submodule update --init --recursive
+          git fetch --prune --unshallow
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.13"
+      - name: configure
+        run: |
+          sudo apt-get update
+          sudo apt-get install libeigen3-dev
+      - name: Generate Stubs
+        run: |
+          pip install pybind11-stubgen
+          pip install .
+          mkdir -p marinholab-stubs
+          pybind11-stubgen marinholab.working.needlemanipulation --output-dir stubs_temp
+          cp -r stubs_temp/marinholab/ marinholab-stubs
+      - name: Upload Stubs
+        uses: actions/upload-artifact@v4
+        with:
+          name: stubs
+          path: marinholab-stubs
+
+  build:
+    needs: build_stubs
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -56,16 +86,12 @@ jobs:
           echo "Adding symlink to vcpkg..."
           cmd /c mklink /d c:\Tools\vcpkg c:\vcpkg
           cd ~
-      #- name: Generate Stubs
-      #  run: |
-      #    pip install pybind11-stubgen
-      #    pip install .
-      #    mkdir -p marinholab-stubs
-      #    pybind11-stubgen marinholab.working.needlemanipulation --output-dir stubs_temp
-      #    cp -r stubs_temp/marinholab/ marinholab-stubs
-      #    pip uninstall marinholab-working-needlemanipulation -y
+      - uses: actions/download-artifact@v4
+        with:
+          name: stubs
       - name: build
         run: |
+          ls -R
           python -m pip config set global.break-system-packages true
           python -m pip install --upgrade pip
           python -m pip install setuptools wheel setuptools-git-versioning
