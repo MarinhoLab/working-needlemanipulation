@@ -145,7 +145,10 @@ class ICRA19TaskSpaceController:
         fr = self.gain * Nr.transpose() @ er
 
         # Damping term
-        Hd = np.eye(DOF, DOF) * self.damping * self.damping
+        if isinstance(self.damping, np.ndarray):
+            Hd = self.damping
+        else:
+            Hd = np.eye(DOF, DOF) * self.damping * self.damping
 
         # Combine terms using the soft priority
         H = self.alpha * Ht + (1.0 - self.alpha) * Hr + Hd
@@ -179,7 +182,7 @@ class ICRA19TaskSpaceController:
                     w = w_c
                 else:
                     W = np.vstack((W, W_c))
-                    w = np.vstack((w, w_c))
+                    w = np.hstack((w, w_c))
 
         return H, f, W, w
 

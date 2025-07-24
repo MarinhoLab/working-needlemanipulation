@@ -17,6 +17,7 @@ def main():
     upper_q_limit = [85, 85, 120, 0, 85, 355, 170, 30, 30]
     lrobot.set_lower_q_limit(lower_q_limit)
     lrobot.set_upper_q_limit(upper_q_limit)
+
     DQ_SerialManipulatorDH.get_lower_q_limit()
     controller = NeedleController(
         kinematics=lrobot,
