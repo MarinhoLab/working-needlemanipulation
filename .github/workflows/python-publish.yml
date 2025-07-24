@@ -29,14 +29,14 @@ jobs:
         run: |
           pip install pybind11-stubgen
           pip install .
-          mkdir -p marinholab-stubs
+          mkdir -p artifact_dir/marinholab-stubs
           pybind11-stubgen marinholab.working.needlemanipulation --output-dir stubs_temp
-          cp -r stubs_temp/marinholab/ marinholab-stubs
+          cp -r stubs_temp/marinholab/* artifact_dir/marinholab-stubs
       - name: Upload Stubs
         uses: actions/upload-artifact@v4
         with:
           name: stubs
-          path: 'marinholab-stubs'
+          path: artifact_dir
 
   build:
     needs: build_stubs
