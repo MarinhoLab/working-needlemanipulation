@@ -18,7 +18,6 @@ def main():
     lrobot.set_lower_q_limit(lower_q_limit)
     lrobot.set_upper_q_limit(upper_q_limit)
 
-    DQ_SerialManipulatorDH.get_lower_q_limit()
     controller = NeedleController(
         kinematics=lrobot,
         gain=10.0,
@@ -29,7 +28,8 @@ def main():
             (lrcm2["position"], lrcm2["radius"], 6)],
         relative_needle_pose=DQ([1]),
         vessel_position=DQ([1,2,3]),
-        needle_radius=0.003
+        needle_radius=0.003,
+        vfi_gain=2.0
     )
 
 if __name__ == "__main__":

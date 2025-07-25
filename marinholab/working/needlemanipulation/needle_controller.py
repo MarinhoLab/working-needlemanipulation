@@ -20,8 +20,8 @@ class NeedleController(ICRA19TaskSpaceController):
                  relative_needle_pose: DQ,
                  vessel_position: DQ,
                  needle_radius: float,
-                 vfi_again: float = 2.0):
-        super().__init__(kinematics, gain, damping, alpha, rcm_constraints, vfi_again=vfi_again)
+                 vfi_gain: float = 2.0):
+        super().__init__(kinematics, gain, damping, alpha, rcm_constraints, vfi_gain)
 
         self.relative_needle_pose = relative_needle_pose
         self.vessel_position = vessel_position
