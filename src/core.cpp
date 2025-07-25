@@ -78,8 +78,8 @@ PYBIND11_MODULE(_core, m) {
         DQ_QuadraticProgrammingSolver
         > dq_qpoasessolver_py(m, "DQ_QPOASESSolver");
 
-    dq_qpoasessolver_py.def(py::init());
-    dq_qpoasessolver_py.def("solve_quadratic_program", DQ_QPOASESSolver::solve_quadratic_program, "Solves a quadratic program");
+    dq_qpoasessolver_py.def(py::init<>());
+    dq_qpoasessolver_py.def("solve_quadratic_program", &DQ_QPOASESSolver::solve_quadratic_program, "Solves a quadratic program");
 
 #ifdef VERSION_INFO
     m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);

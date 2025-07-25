@@ -23,6 +23,7 @@ target_include_directories(_core PRIVATE
     include
     submodules/dqrobotics/cpp/include/
     submodules/dqrobotics/cpp-interface-qpoases/include
+    submodules/qpOASES/include
     )
 
 # CMAKE was not passing BUILD_SHARED_LIBS nicely to the add_subdirectory.
@@ -31,7 +32,7 @@ set(BUILD_SHARED_LIBS FALSE CACHE BOOL "x" FORCE)
 add_subdirectory(submodules/dqrobotics/python/cpp)
 add_subdirectory(submodules/qpOASES)
 
-target_link_libraries(_core PRIVATE dqrobotics Eigen3::Eigen qpOASES)
+target_link_libraries(_core PRIVATE dqrobotics qpOASES Eigen3::Eigen)
 # Version is dynamically obtained. See pyproject.toml
 # Activating this causes issues with Windows compilation.
 # target_compile_definitions(_core PRIVATE VERSION_INFO=${PROJECT_VERSION})
