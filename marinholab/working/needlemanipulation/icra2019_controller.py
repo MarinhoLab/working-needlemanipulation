@@ -24,7 +24,8 @@ class ICRA19TaskSpaceController:
                  gain: float,
                  damping: float,
                  alpha: float,
-                 rcm_constraints: list[tuple[DQ, float, int]]):
+                 rcm_constraints: list[tuple[DQ, float, int]],
+                 vfi_again: float = 2.0):
         """
         Initialize the controller.
         :param kinematics: A suitable DQ_SerialManipulator object.
@@ -41,6 +42,7 @@ class ICRA19TaskSpaceController:
         self.damping: float = damping
         self.alpha: float = alpha
         self.rcm_constraints: list[tuple[DQ, float, int]] = rcm_constraints
+        self.vfi_again: float = vfi_again
 
         self.last_x: np.array = None
         self.last_Jx: np.array = None
@@ -169,7 +171,7 @@ class ICRA19TaskSpaceController:
                 Jx_idx = self.kinematics.pose_jacobian(q, idx)
                 x_idx = self.kinematics.fkm(q, idx)
 
-                W_c_idx, w_c = self.get_rcm_constraint(Jx_idx, x_idx, k_, p, r, 0.1)
+                W_c_idx, w_c = self.get_rcm_constraint(Jx_idx, x_idx, k_, p, r, self.vfi_gain)
 
                 # Full matrix and vector
                 W_c = np.zeros((1,DOF))
