@@ -8,7 +8,7 @@
 #include <pybind11/eigen.h>
 #include <pybind11/stl.h>
 
-#include <dqrobotics/solvers/DQ_QPOASESSolver.h>
+//#include <dqrobotics/solvers/DQ_QPOASESSolver.h>
 
 #include <M3_SerialManipulatorSimulatorFriendly.h>
 
@@ -72,14 +72,14 @@ PYBIND11_MODULE(_core, m) {
         .export_values();
 
 
-    py::class_<
-        DQ_QPOASESSolver,
-        std::shared_ptr<DQ_QPOASESSolver>,
-        DQ_QuadraticProgrammingSolver
-        > dq_qpoasessolver_py(m, "DQ_QPOASESSolver");
+    //py::class_<
+    //    DQ_QPOASESSolver,
+    //    std::shared_ptr<DQ_QPOASESSolver>,
+    //    DQ_QuadraticProgrammingSolver
+    //    > dq_qpoasessolver_py(m, "DQ_QPOASESSolver");
 
-    dq_qpoasessolver_py.def(py::init<>());
-    dq_qpoasessolver_py.def("solve_quadratic_program", &DQ_QPOASESSolver::solve_quadratic_program, "Solves a quadratic program");
+    //dq_qpoasessolver_py.def(py::init<>());
+    //dq_qpoasessolver_py.def("solve_quadratic_program", &DQ_QPOASESSolver::solve_quadratic_program, "Solves a quadratic program");
 
 #ifdef VERSION_INFO
     m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
