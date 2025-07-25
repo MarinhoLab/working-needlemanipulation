@@ -18,7 +18,7 @@ class NeedleController(ICRA19TaskSpaceController):
                  alpha: float,
                  rcm_constraints: list[tuple[DQ, float, int]],
                  relative_needle_pose: DQ,
-                 vessel_position: DQ,
+                 vessel_positions: list[DQ],
                  needle_radius: float,
                  vfi_gain: float = 2.0,
                  **kwargs):
@@ -34,7 +34,7 @@ class NeedleController(ICRA19TaskSpaceController):
             self.d_safe_radius = kwargs["d_safe_radius"]
 
         self.relative_needle_pose = relative_needle_pose
-        self.vessel_position = vessel_position
+        self.vessel_positions = vessel_positions
         self.needle_radius = needle_radius
 
     def compute_setpoint_control_signal(self, q, xd) -> np.array:
@@ -59,21 +59,18 @@ class NeedleController(ICRA19TaskSpaceController):
         x_needle = x * self.relative_needle_pose
 
         # VFI-related Jacobian
-        J_needle = needle_jacobian(Jx_needle, x_needle, self.vessel_position)
-
-        # VFI W
-        W_needle = np.array(J_needle)
+        W_needle = needle_jacobian(Jx_needle, x_needle, self.vessel_positions)
         # VFI w
         w_needle = needle_w(
             x_needle=x_needle,
-            p_vessel=self.vessel_position,
+            ps_vessel=self.vessel_positions,
             needle_radius=self.needle_radius,
             vfi_gain_planes=self.vfi_gain_planes if hasattr(self,"vfi_gain_planes") else self.vfi_gain,
             vfi_gain_radius=self.vfi_gain_radius if hasattr(self,"vfi_gain_radius") else self.vfi_gain,
             d_safe_planes=self.d_safe_planes if hasattr(self,"d_safe_planes") else 0.0005,
             d_safe_radius=self.d_safe_radius if hasattr(self,"d_safe_radius") else 0.0005,
             verbose=self.verbose
-        ).reshape((J_needle.shape[0],))
+        ).reshape((W_needle.shape[0],))
 
         if W is not None and w is not None:
             W = np.vstack((W, W_needle))
