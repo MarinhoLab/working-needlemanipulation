@@ -2,6 +2,8 @@
 Copyright (C) 2020-25 Murilo Marques Marinho (www.murilomarinho.info)
 LGPLv3 License
 """
+import math
+
 from dqrobotics.robot_modeling import DQ_Kinematics, DQ_SerialManipulator
 from dqrobotics.utils import DQ_Geometry
 from dqrobotics import *
@@ -185,9 +187,9 @@ class ICRA19TaskSpaceController:
                 W_c_idx, w_c = self.get_rcm_constraint(Jx_idx, x_idx, k_, p, r, self.vfi_gain)
 
                 if self.verbose:
-                    print(f"RCM {constraint_counter} signed error = {w_c}")
+                    print(f"RCM {constraint_counter} signed error = {w_c[0]}")
                     if w_c < 0:
-                        cprint(f"     Constraint violation: {w_c}", "red")
+                        cprint(f"     ↑↑↑Constraint violation: {math.sqrt(-w_c[0])}", "red")
                     constraint_counter += 1
 
                 # Full matrix and vector

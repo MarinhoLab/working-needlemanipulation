@@ -152,7 +152,11 @@ needle_controller = NeedleController(
         vessel_position=vessel_point,
         needle_radius=radius,
         vfi_gain=2,
-        verbose=True
+        verbose=True,
+        vfi_gain_radius=4,
+        vfi_gain_planes=3,
+        d_safe_radius=0.0005,
+        d_safe_planes=0.0004
     )
 
 

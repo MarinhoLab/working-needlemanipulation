@@ -24,6 +24,15 @@ class NeedleController(ICRA19TaskSpaceController):
                  **kwargs):
         super().__init__(kinematics, gain, damping, alpha, rcm_constraints, vfi_gain, **kwargs)
 
+        if "vfi_gain_planes" in kwargs:
+            self.vfi_gain_planes = kwargs["vfi_gain_planes"]
+        if "vfi_gain_radius" in kwargs:
+            self.vfi_gain_radius = kwargs["vfi_gain_radius"]
+        if "d_safe_planes" in kwargs:
+            self.d_safe_planes = kwargs["d_safe_planes"]
+        if "d_safe_radius" in kwargs:
+            self.d_safe_radius = kwargs["d_safe_radius"]
+
         self.relative_needle_pose = relative_needle_pose
         self.vessel_position = vessel_position
         self.needle_radius = needle_radius
@@ -56,11 +65,14 @@ class NeedleController(ICRA19TaskSpaceController):
         W_needle = np.array(J_needle)
         # VFI w
         w_needle = needle_w(
-            x_needle,
-            self.vessel_position,
-            self.needle_radius,
-            self.vfi_gain,
-            self.verbose
+            x_needle=x_needle,
+            p_vessel=self.vessel_position,
+            needle_radius=self.needle_radius,
+            vfi_gain_planes=self.vfi_gain_planes if hasattr(self,"vfi_gain_planes") else self.vfi_gain,
+            vfi_gain_radius=self.vfi_gain_radius if hasattr(self,"vfi_gain_radius") else self.vfi_gain,
+            d_safe_planes=self.d_safe_planes if hasattr(self,"d_safe_planes") else 0.0005,
+            d_safe_radius=self.d_safe_radius if hasattr(self,"d_safe_radius") else 0.0005,
+            verbose=self.verbose
         ).reshape((J_needle.shape[0],))
 
         if W is not None and w is not None:
