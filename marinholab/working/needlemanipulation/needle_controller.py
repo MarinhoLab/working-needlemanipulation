@@ -20,8 +20,9 @@ class NeedleController(ICRA19TaskSpaceController):
                  relative_needle_pose: DQ,
                  vessel_position: DQ,
                  needle_radius: float,
-                 vfi_gain: float = 2.0):
-        super().__init__(kinematics, gain, damping, alpha, rcm_constraints, vfi_gain)
+                 vfi_gain: float = 2.0,
+                 **kwargs):
+        super().__init__(kinematics, gain, damping, alpha, rcm_constraints, vfi_gain, **kwargs)
 
         self.relative_needle_pose = relative_needle_pose
         self.vessel_position = vessel_position
@@ -54,7 +55,13 @@ class NeedleController(ICRA19TaskSpaceController):
         # VFI W
         W_needle = np.array(J_needle)
         # VFI w
-        w_needle = needle_w(x_needle, self.vessel_position, self.needle_radius, self.vfi_gain).reshape((J_needle.shape[0],))
+        w_needle = needle_w(
+            x_needle,
+            self.vessel_position,
+            self.needle_radius,
+            self.vfi_gain,
+            self.verbose
+        ).reshape((J_needle.shape[0],))
 
         if W is not None and w is not None:
             W = np.vstack((W, W_needle))

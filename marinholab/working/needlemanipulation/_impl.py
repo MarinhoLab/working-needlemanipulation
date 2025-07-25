@@ -3,6 +3,7 @@ Copyright (C) 2025 Murilo Marques Marinho (www.murilomarinho.info)
 LGPLv3 License
 """
 
+import math
 import numpy as np
 from dqrobotics import *
 from dqrobotics.utils import DQ_Geometry
@@ -24,7 +25,7 @@ def needle_jacobian(Jx_needle, x_needle: DQ, p_vessel: DQ):
     return np.vstack((Jradius, -Jradius, Jpi_needle, -Jpi_needle))
 
 
-def needle_w(x_needle: DQ, p_vessel: DQ, needle_radius: float, vfi_gain: float):
+def needle_w(x_needle: DQ, p_vessel: DQ, needle_radius: float, vfi_gain: float, verbose: bool):
     """
     First idea, "needle" Jacobian. It is defined as J = [Jr Jpi]^T
     x_needle: The pose of the centre of the needle
@@ -36,8 +37,14 @@ def needle_w(x_needle: DQ, p_vessel: DQ, needle_radius: float, vfi_gain: float):
     current_radius_squared = DQ_Geometry.point_to_point_squared_distance(p_needle, p_vessel)
     needle_radius_squared = needle_radius ** 2
 
-    radius_error_one = (needle_radius_squared + 0.0005) - current_radius_squared
-    radius_error_two = current_radius_squared - (needle_radius_squared - 0.0005)
+    radius_safe_delta = 0.0005 ** 2
+    radius_error_one = (needle_radius_squared + radius_safe_delta) - current_radius_squared
+    radius_error_two = current_radius_squared - (needle_radius_squared - radius_safe_delta)
+
+    if verbose:
+        print(f"Upper radius {math.sqrt((needle_radius_squared + radius_safe_delta))}")
+        print(f"Current radius {math.sqrt(current_radius_squared)}")
+        print(f"Lower radius {math.sqrt((needle_radius_squared - radius_safe_delta))}")
 
     r_needle = rotation(x_needle)
     n_needle = r_needle * k_ * conj(r_needle)
@@ -46,8 +53,13 @@ def needle_w(x_needle: DQ, p_vessel: DQ, needle_radius: float, vfi_gain: float):
 
     current_plane_distance = DQ_Geometry.point_to_plane_distance(p_vessel, pi_needle)
 
-    plane_error_one = 0.0005 - current_plane_distance
-    plane_error_two = current_plane_distance - (-0.0005)
+    plane_error_one = radius_safe_delta - current_plane_distance
+    plane_error_two = current_plane_distance - (-radius_safe_delta)
+
+    if verbose:
+        print(f"Upper plane {radius_safe_delta - current_plane_distance}")
+        print(f"Current plane {current_plane_distance}")
+        print(f"Lower plane {current_plane_distance - (-radius_safe_delta)}")
 
     # Adjusting VFI gain to be twice as much for the first-order distances.
     return np.vstack((vfi_gain * radius_error_one,
