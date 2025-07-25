@@ -19,7 +19,8 @@ maintainers = [
 dynamic = ["version"]
 dependencies=[
     'dqrobotics>=23.4.0a49',
-    'quadprog'
+    'quadprog',
+    'termcolor'
 ]
 description = "Ongoing work on needle manipulation in a collaboration between UTokyo and UoM."
 readme = "README.md"

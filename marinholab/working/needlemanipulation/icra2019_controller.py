@@ -8,6 +8,7 @@ from dqrobotics import *
 from dqrobotics.solvers import DQ_QuadprogSolver
 
 import numpy as np
+from termcolor import cprint
 
 
 class ICRA19TaskSpaceController:
@@ -171,6 +172,10 @@ class ICRA19TaskSpaceController:
         # RCM constraints
         W = W_jl
         w = w_jl
+
+        if self.verbose:
+            constraint_counter = 0
+
         if self.rcm_constraints is not None:
             for constraint in self.rcm_constraints:
                 p, r, idx = constraint
@@ -178,6 +183,12 @@ class ICRA19TaskSpaceController:
                 x_idx = self.kinematics.fkm(q, idx)
 
                 W_c_idx, w_c = self.get_rcm_constraint(Jx_idx, x_idx, k_, p, r, self.vfi_gain)
+
+                if self.verbose:
+                    print(f"RCM {constraint_counter} signed error = {w_c}")
+                    if w_c < 0:
+                        cprint(f"     Constraint violation: {w_c}", "red")
+                    constraint_counter += 1
 
                 # Full matrix and vector
                 W_c = np.zeros((1,DOF))
