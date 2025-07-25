@@ -21,7 +21,7 @@ def needle_jacobian(Jx_needle, x_needle: DQ, p_vessel: DQ):
     Jradius = DQ_Kinematics.point_to_point_distance_jacobian(Jt_needle, p_needle, p_vessel)
     Jpi_needle = DQ_Kinematics.plane_jacobian(Jx_needle, x_needle, k_)
     Jpi_needle = DQ_Kinematics.plane_to_point_distance_jacobian(Jpi_needle, p_vessel)
-    return np.vstack((Jradius, Jpi_needle, -Jpi_needle))
+    return np.vstack((Jradius, -Jradius, Jpi_needle, -Jpi_needle))
 
 
 def needle_entry_error(x_needle: DQ, p_vessel: DQ, needle_radius: float):
@@ -35,7 +35,9 @@ def needle_entry_error(x_needle: DQ, p_vessel: DQ, needle_radius: float):
     # Just as a reminder, our Jacobians use the squared distance so keep that in mind
     current_radius_squared = DQ_Geometry.point_to_point_squared_distance(p_needle, p_vessel)
     needle_radius_squared = needle_radius ** 2
-    radius_error = needle_radius_squared - current_radius_squared
+
+    radius_error_one = (needle_radius_squared + 0.0005) - current_radius_squared
+    radius_error_two = current_radius_squared - (needle_radius_squared - 0.0005)
 
     r_needle = rotation(x_needle)
     n_needle = r_needle * k_ * conj(r_needle)
@@ -47,4 +49,4 @@ def needle_entry_error(x_needle: DQ, p_vessel: DQ, needle_radius: float):
     plane_error_one = 0.0005 - current_plane_distance
     plane_error_two = current_plane_distance - (-0.0005)
 
-    return np.vstack((radius_error, plane_error_one, plane_error_two))
+    return np.vstack((radius_error_one, radius_error_two, plane_error_one, plane_error_two))

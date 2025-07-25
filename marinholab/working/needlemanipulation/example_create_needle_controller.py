@@ -4,7 +4,6 @@ LGPLv3 License
 """
 from importlib.resources import files
 from dqrobotics import *
-from dqrobotics.robot_modeling import DQ_SerialManipulatorDH
 
 from marinholab.working.needlemanipulation import NeedleController
 from marinholab.working.needlemanipulation.example_load_from_file import get_information_from_file
