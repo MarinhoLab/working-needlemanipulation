@@ -8,6 +8,8 @@
 #include <pybind11/eigen.h>
 #include <pybind11/stl.h>
 
+#include <dqrobotics/solvers/DQ_QPOASESSolver.h>
+
 #include <M3_SerialManipulatorSimulatorFriendly.h>
 
 #define STRINGIFY(x) #x
@@ -69,6 +71,15 @@ PYBIND11_MODULE(_core, m) {
         .value("TX", M3_SerialManipulatorSimulatorFriendly::ActuationType::TX,  "Translation along the x-axis")
         .export_values();
 
+
+    py::class_<
+        DQ_QPOASESSolver,
+        std::shared_ptr<DQ_QPOASESSolver>,
+        DQ_QuadraticProgrammingSolver
+        > dq_qpoasessolver_py(m, "DQ_QPOASESSolver");
+
+    dq_qpoasessolver_py.def(py::init());
+    dq_qpoasessolver_py.def("solve_quadratic_program", DQ_QPOASESSolver::solve_quadratic_program, "Solves a quadratic program");
 
 #ifdef VERSION_INFO
     m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);

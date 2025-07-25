@@ -1,3 +1,6 @@
 [submodule "submodules/dqrobotics/python"]
 	path = submodules/dqrobotics/python
 	url = https://github.com/dqrobotics/python.git
+[submodule "submodules/qpOASES"]
+	path = submodules/qpOASES
+	url = https://github.com/coin-or/qpOASES.git
