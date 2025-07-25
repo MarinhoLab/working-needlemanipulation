@@ -24,7 +24,7 @@ def needle_jacobian(Jx_needle, x_needle: DQ, p_vessel: DQ):
     return np.vstack((Jradius, -Jradius, Jpi_needle, -Jpi_needle))
 
 
-def needle_entry_error(x_needle: DQ, p_vessel: DQ, needle_radius: float):
+def needle_w(x_needle: DQ, p_vessel: DQ, needle_radius: float, vfi_gain: float):
     """
     First idea, "needle" Jacobian. It is defined as J = [Jr Jpi]^T
     x_needle: The pose of the centre of the needle
@@ -49,4 +49,8 @@ def needle_entry_error(x_needle: DQ, p_vessel: DQ, needle_radius: float):
     plane_error_one = 0.0005 - current_plane_distance
     plane_error_two = current_plane_distance - (-0.0005)
 
-    return np.vstack((radius_error_one, radius_error_two, plane_error_one, plane_error_two))
+    # Adjusting VFI gain to be twice as much for the first-order distances.
+    return np.vstack((vfi_gain * radius_error_one,
+                      vfi_gain * radius_error_two,
+                      2.0 * vfi_gain * plane_error_one,
+                      2.0 * vfi_gain * plane_error_two))

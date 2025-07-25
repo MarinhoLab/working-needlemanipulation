@@ -8,7 +8,7 @@ from marinholab.working.needlemanipulation.icra2019_controller import ICRA19Task
 from dqrobotics import *
 from dqrobotics.robot_modeling import DQ_SerialManipulator
 
-from marinholab.working.needlemanipulation import needle_jacobian, needle_entry_error
+from marinholab.working.needlemanipulation import needle_jacobian, needle_w
 
 class NeedleController(ICRA19TaskSpaceController):
     def __init__(self,
@@ -50,12 +50,11 @@ class NeedleController(ICRA19TaskSpaceController):
 
         # VFI-related Jacobian
         J_needle = needle_jacobian(Jx_needle, x_needle, self.vessel_position)
-        # VFI-related squared distance
-        D_needle = needle_entry_error(x_needle, self.vessel_position, self.needle_radius)
 
-        # VFI
+        # VFI W
         W_needle = np.array(J_needle)
-        w_needle = np.array([self.vfi_gain * D_needle]).reshape((J_needle.shape[0],))
+        # VFI w
+        w_needle = needle_w(x_needle, self.vessel_position, self.needle_radius, self.vfi_gain).reshape((J_needle.shape[0],))
 
         if W is not None and w is not None:
             W = np.vstack((W, W_needle))
