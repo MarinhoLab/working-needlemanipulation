@@ -51,12 +51,10 @@ class NeedleController(ICRA19TaskSpaceController):
         J_needle = needle_jacobian(Jx_needle, x_needle, self.vessel_position)
         # VFI-related squared distance
         D_needle = needle_entry_error(x_needle, self.vessel_position, self.needle_radius)
-        # VFI-related distance error
-        D_tilde = 0 - D_needle
 
         # VFI
         W_needle = np.array(J_needle)
-        w_needle = np.array([0.1 * D_tilde]).reshape((2,))
+        w_needle = np.array([0.1 * D_needle]).reshape((J_needle.shape[0],))
 
         if W is not None and w is not None:
             W = np.vstack((W, W_needle))
