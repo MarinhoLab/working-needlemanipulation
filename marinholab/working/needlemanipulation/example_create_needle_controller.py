@@ -26,7 +26,8 @@ def main():
             (lrcm1["position"], lrcm1["radius"], 6),
             (lrcm2["position"], lrcm2["radius"], 6)],
         relative_needle_pose=DQ([1]),
-        vessel_position=DQ([1,2,3]),
+        vessel_positions=[DQ([1,2,3]),DQ([3,2,1])],
+        vessel_normals=[DQ([1,0,0]),DQ([0,0,1])],
         needle_radius=0.003,
         vfi_gain=2.0
     )
