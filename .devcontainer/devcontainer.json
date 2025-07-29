@@ -1,0 +1,15 @@
+// Default Ubuntu-based DevContainer Template.
+// For more customization options, see https://containers.dev/implementors/json_reference
+{
+  name: "Default",
+  dockerFile: "./Dockerfile",
+  // Configure tool-specific properties.
+  "customizations" : {
+    "jetbrains" : {
+      "backend" : "PyCharm"
+    }
+  },
+  "postCreateCommand": "cd /IdeaProjects/working-needlemanipulation && git config --global --add safe.directory /IdeaProjects/working-needlemanipulation && git submodule update --init --recursive",
+  // Comment out to connect as the root user.
+  // remoteUser: "ubuntu"
+}
