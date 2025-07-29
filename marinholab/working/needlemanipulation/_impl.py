@@ -58,14 +58,15 @@ def needle_jacobian(Jx_needle,
         W = np.vstack((Jradius, -Jradius, Jpi, -Jpi))
 
         # Stack vertically
-        W_needle = np.vstack((W_needle, W)) if W_needle is not None else W_needle = W
+        W_needle = (np.vstack((W_needle, W)) if W_needle is not None else W)
 
-    for n_vessel in ns_vessel:
-        J_normal = normal_dot_product_jacobian(n_vessel, k_, r_needle, Jr_needle)
-        W = np.vstack((J_normal, -J_normal))
+    if ns_vessel is not None:
+        for n_vessel in ns_vessel:
+            J_normal = normal_dot_product_jacobian(n_vessel, k_, r_needle, Jr_needle)
+            W = np.vstack((J_normal, -J_normal))
 
-        # Stack vertically
-        W_needle = np.vstack((W_needle, W)) if W_needle is not None else W_needle = W
+            # Stack vertically
+            W_needle = (np.vstack((W_needle, W)) if W_needle is not None else W)
 
     return W_needle
 
@@ -79,6 +80,7 @@ def needle_w(x_needle: DQ,
              vfi_gain_angles: float,
              d_safe_planes: float,
              d_safe_radius: float,
+             d_safe_angles: float,
              verbose: bool):
     """
     First idea, "needle" Jacobian. It is defined as J = [Jr Jpi]^T
@@ -132,29 +134,31 @@ def needle_w(x_needle: DQ,
                       2.0 * vfi_gain_planes * plane_error_one,
                       2.0 * vfi_gain_planes * plane_error_two))
 
-        w_needle = np.vstack((w_needle, w)) if w_needle is not None else w_needle = w
+        w_needle = (np.vstack((w_needle, w)) if w_needle is not None else w)
 
-    for n_vessel in ns_vessel:
-        lz = Ad(r_needle, k_)
-        current_dot = float( dot(n_vessel, lz) )
-        min_dot = math.acos(-math.pi / 4)
-        max_dot = math.acos(math.pi / 4)
+    if ns_vessel is not None:
+        for n_vessel in ns_vessel:
+            lz = Ad(r_needle, k_)
+            current_dot = dot(n_vessel, lz).q[0]
+            max_dot = math.cos(math.pi/2 - d_safe_angles) # Positive
+            min_dot = math.cos(math.pi/2 + d_safe_angles) # Negative
 
-        dot_error_one = max_dot - current_dot
-        dot_error_two = current_dot - min_dot
+            dot_error_one = max_dot - current_dot
+            dot_error_two = current_dot - min_dot
 
-        if verbose:
-            print(f"Upper dot {dot_error_one}")
-            if dot_error_one < 0:
-                cprint(f"     ↑↑↑Constraint violation: {dot_error_one}", "red")
-            print(f"Current dot {current_dot}")
-            print(f"Lower dot {dot_error_two}")
-            if dot_error_two < 0:
-                cprint(f"     ↑↑↑Constraint violation: {dot_error_two}", "red")
+            if verbose:
+                print(f"Upper dot {dot_error_one}")
+                if dot_error_one < 0:
+                    cprint(f"     ↑↑↑Constraint violation: {dot_error_one}", "red")
+                print(f"Current dot {current_dot}")
+                print(f"Lower dot {dot_error_two}")
+                if dot_error_two < 0:
+                    cprint(f"     ↑↑↑Constraint violation: {dot_error_two}", "red")
 
-        w = np.vstack((vfi_gain_angles * dot_error_one,
-                      vfi_gain_angles * dot_error_two))
+            # Times two because it's not quadratic
+            w = np.vstack((2.0 * vfi_gain_angles * dot_error_one,
+                           2.0 * vfi_gain_angles * dot_error_two))
 
-        w_needle = np.vstack((w_needle, w)) if w_needle is not None else w_needle = w
+            w_needle = (np.vstack((w_needle, w)) if w_needle is not None else w)
 
     return w_needle

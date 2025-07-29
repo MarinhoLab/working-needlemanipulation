@@ -3,6 +3,7 @@ Copyright (C) 2025 Murilo Marques Marinho (www.murilomarinho.info)
 LGPLv3 License
 """
 import numpy as np
+import math
 
 from marinholab.working.needlemanipulation.icra2019_controller import ICRA19TaskSpaceController
 from dqrobotics import *
@@ -28,10 +29,16 @@ class NeedleController(ICRA19TaskSpaceController):
             self.vfi_gain_planes = kwargs["vfi_gain_planes"]
         if "vfi_gain_radius" in kwargs:
             self.vfi_gain_radius = kwargs["vfi_gain_radius"]
+        if "vfi_gain_angles" in kwargs:
+            self.vfi_gain_angles = kwargs["vfi_gain_angles"]
         if "d_safe_planes" in kwargs:
             self.d_safe_planes = kwargs["d_safe_planes"]
         if "d_safe_radius" in kwargs:
             self.d_safe_radius = kwargs["d_safe_radius"]
+        if "vessel_normals" in kwargs:
+            self.vessel_normals = kwargs["vessel_normals"]
+        if "d_safe_angles" in kwargs:
+            self.d_safe_angles = kwargs["d_safe_angles"]
 
         self.relative_needle_pose = relative_needle_pose
         self.vessel_positions = vessel_positions
@@ -59,16 +66,23 @@ class NeedleController(ICRA19TaskSpaceController):
         x_needle = x * self.relative_needle_pose
 
         # VFI-related Jacobian
-        W_needle = needle_jacobian(Jx_needle, x_needle, self.vessel_positions)
+        W_needle = needle_jacobian(
+            Jx_needle,
+            x_needle,
+            self.vessel_positions,
+            self.vessel_normals if hasattr(self,"vessel_normals") else None)
         # VFI w
         w_needle = needle_w(
             x_needle=x_needle,
             ps_vessel=self.vessel_positions,
+            ns_vessel=self.vessel_normals if hasattr(self,"vessel_normals") else None,
             needle_radius=self.needle_radius,
             vfi_gain_planes=self.vfi_gain_planes if hasattr(self,"vfi_gain_planes") else self.vfi_gain,
             vfi_gain_radius=self.vfi_gain_radius if hasattr(self,"vfi_gain_radius") else self.vfi_gain,
+            vfi_gain_angles=self.vfi_gain_angles if hasattr(self, "vfi_gain_angles") else self.vfi_gain,
             d_safe_planes=self.d_safe_planes if hasattr(self,"d_safe_planes") else 0.0005,
             d_safe_radius=self.d_safe_radius if hasattr(self,"d_safe_radius") else 0.0005,
+            d_safe_angles=self.d_safe_angles if hasattr(self,"d_safe_angles") else math.pi/4,
             verbose=self.verbose
         ).reshape((W_needle.shape[0],))
 
