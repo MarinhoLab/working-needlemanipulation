@@ -80,6 +80,7 @@ def needle_w(x_needle: DQ,
              vfi_gain_angles: float,
              d_safe_planes: float,
              d_safe_radius: float,
+             d_safe_angles: float,
              verbose: bool):
     """
     First idea, "needle" Jacobian. It is defined as J = [Jr Jpi]^T
@@ -139,11 +140,11 @@ def needle_w(x_needle: DQ,
         for n_vessel in ns_vessel:
             lz = Ad(r_needle, k_)
             current_dot = dot(n_vessel, lz).q[0]
-            max_dot = math.cos(math.pi/2 + (-math.pi / 4)) # Positive
-            min_dot = math.cos(math.pi/2 + (math.pi / 4)) # Negative
+            max_dot = math.cos(math.pi/2 - d_safe_angles) # Positive
+            min_dot = math.cos(math.pi/2 + d_safe_angles) # Negative
 
             dot_error_one = max_dot - current_dot
-            dot_error_two = current_dot - min_dot 
+            dot_error_two = current_dot - min_dot
 
             if verbose:
                 print(f"Upper dot {dot_error_one}")
@@ -154,8 +155,9 @@ def needle_w(x_needle: DQ,
                 if dot_error_two < 0:
                     cprint(f"     ↑↑↑Constraint violation: {dot_error_two}", "red")
 
-            w = np.vstack((vfi_gain_angles * dot_error_one,
-                          vfi_gain_angles * dot_error_two))
+            # Times two because it's not quadratic
+            w = np.vstack((2.0 * vfi_gain_angles * dot_error_one,
+                           2.0 * vfi_gain_angles * dot_error_two))
 
             w_needle = (np.vstack((w_needle, w)) if w_needle is not None else w)
 

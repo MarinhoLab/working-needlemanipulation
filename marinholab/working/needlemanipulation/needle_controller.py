@@ -3,6 +3,7 @@ Copyright (C) 2025 Murilo Marques Marinho (www.murilomarinho.info)
 LGPLv3 License
 """
 import numpy as np
+import math
 
 from marinholab.working.needlemanipulation.icra2019_controller import ICRA19TaskSpaceController
 from dqrobotics import *
@@ -36,6 +37,8 @@ class NeedleController(ICRA19TaskSpaceController):
             self.d_safe_radius = kwargs["d_safe_radius"]
         if "vessel_normals" in kwargs:
             self.vessel_normals = kwargs["vessel_normals"]
+        if "d_safe_angles" in kwargs:
+            self.d_safe_angles = kwargs["d_safe_angles"]
 
         self.relative_needle_pose = relative_needle_pose
         self.vessel_positions = vessel_positions
@@ -79,6 +82,7 @@ class NeedleController(ICRA19TaskSpaceController):
             vfi_gain_angles=self.vfi_gain_angles if hasattr(self, "vfi_gain_angles") else self.vfi_gain,
             d_safe_planes=self.d_safe_planes if hasattr(self,"d_safe_planes") else 0.0005,
             d_safe_radius=self.d_safe_radius if hasattr(self,"d_safe_radius") else 0.0005,
+            d_safe_angles=self.d_safe_radius if hasattr(self,"d_safe_radius") else math.pi/4,
             verbose=self.verbose
         ).reshape((W_needle.shape[0],))
 
