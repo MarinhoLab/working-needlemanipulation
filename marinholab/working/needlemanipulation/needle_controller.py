@@ -82,7 +82,7 @@ class NeedleController(ICRA19TaskSpaceController):
             vfi_gain_angles=self.vfi_gain_angles if hasattr(self, "vfi_gain_angles") else self.vfi_gain,
             d_safe_planes=self.d_safe_planes if hasattr(self,"d_safe_planes") else 0.0005,
             d_safe_radius=self.d_safe_radius if hasattr(self,"d_safe_radius") else 0.0005,
-            d_safe_angles=self.d_safe_radius if hasattr(self,"d_safe_radius") else math.pi/4,
+            d_safe_angles=self.d_safe_angles if hasattr(self,"d_safe_angles") else math.pi/4,
             verbose=self.verbose
         ).reshape((W_needle.shape[0],))
 
