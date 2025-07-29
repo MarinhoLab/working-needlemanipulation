@@ -21,35 +21,34 @@ def rotation_axis_jacobian(primitive: DQ,
     return haminus4(k_ * conj(r)) @ Jr \
            + hamiplus4(r * k_) @ C4() @ Jr
 
-def _l_normal_dot_product_Jacobian(normals: list[DQ],
+def normal_dot_product_jacobian(normal: DQ,
                                    primitive: DQ,
                                    r: DQ,
                                    Jr: np.ndarray) -> np.ndarray:
-    W = None
 
-    for normal in normals:
-        J = vec4(normal).T @ rotation_axis_jacobian(primitive, r, Jr)
-        if W is None:
-            W = J
-        else:
-            np.vstack((W, J))
+    J_normal = vec4(normal).T @ rotation_axis_jacobian(primitive, r, Jr)
+    return J_normal
 
-    return W
-
-def needle_jacobian(Jx_needle, x_needle: DQ, ps_vessel: list[DQ]):
+def needle_jacobian(Jx_needle,
+                    x_needle: DQ,
+                    ps_vessel: list[DQ],
+                    ns_vessel: list[DQ]):
     """
     First idea, "needle" Jacobian. It is defined as J = [Jr Jpi]^T
     x: The pose of the centre of the needle
     Jx: The analytical Jacobian of the pose of the centre of the needle
-    p_vessel: The position of the entry point in the vessel
+    ps_vessel: The positions of the entry points in the vessels
+    ns_vessel: The normals of the entry points in the vessels
     """
     p_needle = translation(x_needle)
+    r_needle = rotation(x_needle)
+
+    Jr_needle = DQ_Kinematics.rotation_jacobian(Jx_needle)
+
     # Radius constraint
     Jt_needle = DQ_Kinematics.translation_jacobian(Jx_needle, x_needle)
     # Plane constraint
     Jpi_needle = DQ_Kinematics.plane_jacobian(Jx_needle, x_needle, k_)
-    # Two-point line rotation constraint
-
 
     W_needle = None
 
@@ -58,10 +57,15 @@ def needle_jacobian(Jx_needle, x_needle: DQ, ps_vessel: list[DQ]):
         Jpi = DQ_Kinematics.plane_to_point_distance_jacobian(Jpi_needle, p_vessel)
         W = np.vstack((Jradius, -Jradius, Jpi, -Jpi))
 
-        if W_needle is None:
-            W_needle = W
-        else:
-            np.vstack((W_needle, W))
+        # Stack vertically
+        W_needle = W if W_needle is None else np.vstack((W_needle, W))
+
+    for n_vessel in ns_vessel:
+        J_normal = normal_dot_product_jacobian(n_vessel, k_, r_needle, Jr_needle)
+        W = np.vstack((J_normal, -J_normal))
+
+        # Stack vertically
+        W_needle = W if W_needle is None else np.vstack((W_needle, W))
 
     return W_needle
 
