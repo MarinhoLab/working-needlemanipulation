@@ -138,12 +138,12 @@ def needle_w(x_needle: DQ,
     if ns_vessel is not None:
         for n_vessel in ns_vessel:
             lz = Ad(r_needle, k_)
-            current_dot = float( dot(n_vessel, lz) )
-            min_dot = math.acos(-math.pi / 4)
-            max_dot = math.acos(math.pi / 4)
+            current_dot = dot(n_vessel, lz).q[0]
+            max_dot = math.cos(math.pi/2 + (-math.pi / 4)) # Positive
+            min_dot = math.cos(math.pi/2 + (math.pi / 4)) # Negative
 
             dot_error_one = max_dot - current_dot
-            dot_error_two = current_dot - min_dot
+            dot_error_two = current_dot - min_dot 
 
             if verbose:
                 print(f"Upper dot {dot_error_one}")
