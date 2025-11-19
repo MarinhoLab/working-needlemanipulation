@@ -52,13 +52,20 @@ def cone_jacobian():
 def needle_jacobian(Jx_needle,
                     x_needle: DQ,
                     ps_vessel: list[DQ],
-                    ns_vessel: list[DQ]):
+                    ns_vessel: list[DQ],
+                    planes_active: bool = True,
+                    spheres_active: bool = True,
+                    driving_angle_active: bool = True,
+                    insertion_angle_active: bool = False,
+                    needle_radius: float = None,
+                    ):
     """
     First idea, "needle" Jacobian. It is defined as J = [Jr Jpi]^T
     x: The pose of the centre of the needle
     Jx: The analytical Jacobian of the pose of the centre of the needle
     ps_vessel: The positions of the entry points in the vessels
     ns_vessel: The normals of the entry points in the vessels
+    needle_radius: The needle radius. If None, than the insertion constraint will not be calculated.
     """
     p_needle = translation(x_needle)
     r_needle = rotation(x_needle)
@@ -72,17 +79,41 @@ def needle_jacobian(Jx_needle,
 
     W_needle = None
 
-    for p_vessel in ps_vessel:
-        Jradius = DQ_Kinematics.point_to_point_distance_jacobian(Jt_needle, p_needle, p_vessel)
-        Jpi = DQ_Kinematics.plane_to_point_distance_jacobian(Jpi_needle, p_vessel)
-        W = np.vstack((Jradius, -Jradius, Jpi, -Jpi))
+    if spheres_active:
+        for p_vessel in ps_vessel:
+            Jradius = DQ_Kinematics.point_to_point_distance_jacobian(Jt_needle, p_needle, p_vessel)
+            W = np.vstack((Jradius, -Jradius))
 
-        # Stack vertically
-        W_needle = (np.vstack((W_needle, W)) if W_needle is not None else W)
+            # Stack vertically
+            W_needle = (np.vstack((W_needle, W)) if W_needle is not None else W)
 
-    if ns_vessel is not None:
-        for n_vessel in ns_vessel:
-            J_normal = normal_dot_product_jacobian(n_vessel, k_, r_needle, Jr_needle)
+    if planes_active:
+
+        for p_vessel in ps_vessel:
+            Jpi = DQ_Kinematics.plane_to_point_distance_jacobian(Jpi_needle, p_vessel)
+            W = np.vstack((Jpi, -Jpi))
+
+            # Stack vertically
+            W_needle = (np.vstack((W_needle, W)) if W_needle is not None else W)
+
+    if driving_angle_active:
+
+        if ns_vessel is not None:
+            for n_vessel in ns_vessel:
+                J_normal = normal_dot_product_jacobian(n_vessel, k_, r_needle, Jr_needle)
+                W = np.vstack((J_normal, -J_normal))
+
+                # Stack vertically
+                W_needle = (np.vstack((W_needle, W)) if W_needle is not None else W)
+
+    if insertion_angle_active:
+
+        if needle_radius is not None:
+
+            # x_needle_tip = x_needle * (1 + 0.5 * E_ * i_ * needle_radius)
+            # r_needle_tip = rotation(x_needle_tip)
+
+            J_normal = normal_dot_product_jacobian(ns_vessel[0], -j_, r_needle, Jr_needle)
             W = np.vstack((J_normal, -J_normal))
 
             # Stack vertically
@@ -183,7 +214,7 @@ def needle_w(x_needle: DQ,
         # So we get the andle about the -y
         lmy = Ad(r_needle_tip, -j_)
         # Check the angle with the first vessel because it's an insertion
-        current_dot = dot(n_vessel[0], lmy).q[0]
+        current_dot = dot(ns_vessel[0], lmy).q[0]
         max_dot = math.cos(math.pi / 2 - d_safe_needle_insertion_angles)  # Positive
         min_dot = math.cos(math.pi / 2 + d_safe_needle_insertion_angles)  # Negative
 
