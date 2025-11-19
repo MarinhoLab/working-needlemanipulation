@@ -25,20 +25,29 @@ class NeedleController(ICRA19TaskSpaceController):
                  **kwargs):
         super().__init__(kinematics, gain, damping, alpha, rcm_constraints, vfi_gain, **kwargs)
 
+        if "vessel_normals" in kwargs:
+            self.vessel_normals = kwargs["vessel_normals"]
+
         if "vfi_gain_planes" in kwargs:
             self.vfi_gain_planes = kwargs["vfi_gain_planes"]
         if "vfi_gain_radius" in kwargs:
             self.vfi_gain_radius = kwargs["vfi_gain_radius"]
         if "vfi_gain_angles" in kwargs:
             self.vfi_gain_angles = kwargs["vfi_gain_angles"]
+
+        self.planes_active = "d_safe_planes" in kwargs
         if "d_safe_planes" in kwargs:
             self.d_safe_planes = kwargs["d_safe_planes"]
+
+        self.spheres_active = "d_safe_radius" in kwargs
         if "d_safe_radius" in kwargs:
             self.d_safe_radius = kwargs["d_safe_radius"]
-        if "vessel_normals" in kwargs:
-            self.vessel_normals = kwargs["vessel_normals"]
+
+        self.driving_angle_active = "d_safe_angles" in kwargs
         if "d_safe_angles" in kwargs:
             self.d_safe_angles = kwargs["d_safe_angles"]
+
+        self.insertion_angle_active = "d_safe_needle_insertion_angles" in kwargs
         if "d_safe_needle_insertion_angles" in kwargs:
             self.d_safe_needle_insertion_angles = kwargs["d_safe_needle_insertion_angles"]
 
@@ -72,7 +81,14 @@ class NeedleController(ICRA19TaskSpaceController):
             Jx_needle,
             x_needle,
             self.vessel_positions,
-            self.vessel_normals if hasattr(self,"vessel_normals") else None)
+            self.vessel_normals if hasattr(self,"vessel_normals") else None,
+            self.planes_active, #planes_active: bool = True,
+            self.spheres_active, #spheres_active: bool = True,
+            self.driving_angle_active, #driving_angle_active: bool = True,
+            self.insertion_angle_active, #insertion_angle_active: bool = False,
+            self.needle_radius
+        )#needle_radius: float = None)
+
         # VFI w
         w_needle = needle_w(
             x_needle=x_needle,
