@@ -1,5 +1,5 @@
 """
-Copyright (C) 2025 Murilo Marques Marinho (www.murilomarinho.info)
+Copyright (C) 2025-26 Murilo Marques Marinho (www.murilomarinho.info)
 LGPLv3 License
 """
 
@@ -45,8 +45,25 @@ def cone_jacobian():
     dot(a,b) = cos φ
     φ = acos( dot(a,b) )
 
-    We can simplify the Jacobian
+    We can simplify the Jacobian using the dot product.
+
+    d_min <= dot(a,b) <= d_max
+
+    Point-to-line distance, where the d_safe depends on the distance to p
+
+    We combine these two distances to make sure that the point is within the code.
+    D_p_line = point_to_line_distance( (p1,n1), needle_tip)
+    This one will be applicable anyway.
+
+    D_safe = point_to_plane_distance( (p1,n1), needle_tip)
+    This D_safe will need to be slightly changed according to the desired angle.
+    45 degrees = 1 => tangent of the desired angle
+
+    tan(point_to_point_distance) -> Need a new Jacobian
+    d/dt(tan(t)) = sec2(t)
+
     """
+    pass
 
 
 def needle_jacobian(Jx_needle,
@@ -65,7 +82,7 @@ def needle_jacobian(Jx_needle,
     Jx: The analytical Jacobian of the pose of the centre of the needle
     ps_vessel: The positions of the entry points in the vessels
     ns_vessel: The normals of the entry points in the vessels
-    needle_radius: The needle radius. If None, than the insertion constraint will not be calculated.
+    needle_radius: The needle radius. If None, then the insertion constraint will not be calculated.
     """
     p_needle = translation(x_needle)
     r_needle = rotation(x_needle)
