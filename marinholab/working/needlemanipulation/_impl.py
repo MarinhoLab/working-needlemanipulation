@@ -11,7 +11,7 @@ from dqrobotics.utils import DQ_Geometry
 from dqrobotics.robot_modeling import DQ_Kinematics
 from termcolor import cprint
 
-def rotation_axis_jacobian(primitive: DQ = k_,
+def rotation_axis_jacobian(primitive: DQ,
                            r: DQ,
                            Jr: np.ndarray):
     """
