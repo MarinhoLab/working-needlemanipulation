@@ -1,4 +1,8 @@
-[submodule "submodules/dqrobotics/python"]
-	path = submodules/dqrobotics/python
-	url = https://github.com/dqrobotics/python.git
+[submodule "submodules/dqrobotics/cpp"]
+	path = submodules/dqrobotics/cpp
+	url = https://github.com/dqrobotics/cpp.git
 	branch = master
+[submodule "submodules/pybind11"]
+	path = submodules/pybind11
+	url = https://github.com/pybind/pybind11.git
+	branch = v3.0
