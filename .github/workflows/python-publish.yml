@@ -45,12 +45,12 @@ jobs:
       matrix:
         #os: ['ubuntu-22.04', 'macos-latest', 'ubuntu-22.04-arm', 'windows-latest']
         os: ['windows-latest']
-        python-version: ['3.10', '3.11', '3.12', '3.13']
-        exclude:
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
+        #exclude:
         # Python 3.13.4 seems to have a bug in Windows (as of June 13, 2025)
         # https://github.com/python/cpython/issues/135151
-         - os: windows-latest
-           python-version: '3.13'
+        # - os: windows-latest
+        #   python-version: '3.13'
 
     permissions:
       id-token: write
