@@ -151,7 +151,7 @@ def needle_w(x_needle: DQ,
              d_safe_radius: float,
              d_safe_angles: float,
              d_safe_needle_insertion_angles: float = None,
-             verbose: bool):
+             verbose: bool = True):
     """
     ns_vessel: If not none, the first item will be the insertion point (the first one the needle passes through)
     and the second item will be the extraction point (the second point the needle passes through).
