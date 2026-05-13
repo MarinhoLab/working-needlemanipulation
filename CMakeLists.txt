@@ -13,7 +13,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Eigen3 REQUIRED)
 
 set(PYBIND11_FINDPYTHON ON)
-add_subdirectory(submodules/dqrobotics/python/pybind11)
+add_subdirectory(submodules/pybind11)
+
 pybind11_add_module(_core MODULE
         src/core.cpp
         src/M3_SerialManipulatorSimulatorFriendly.cpp
@@ -22,15 +23,12 @@ pybind11_add_module(_core MODULE
 target_include_directories(_core PRIVATE
     include
     submodules/dqrobotics/cpp/include/
-    #submodules/dqrobotics/cpp-interface-qpoases/include
-    #submodules/qpOASES/include
     )
 
 # CMAKE was not passing BUILD_SHARED_LIBS nicely to the add_subdirectory.
 # https://thatonegamedev.com/cpp/cmake/how-to-manage-dependencies-with-cmake/
 set(BUILD_SHARED_LIBS FALSE CACHE BOOL "x" FORCE)
-add_subdirectory(submodules/dqrobotics/python/cpp)
-#add_subdirectory(submodules/qpOASES)
+add_subdirectory(submodules/dqrobotics/cpp)
 
 target_link_libraries(_core PRIVATE Eigen3::Eigen dqrobotics) #qpOASES
 # Version is dynamically obtained. See pyproject.toml
