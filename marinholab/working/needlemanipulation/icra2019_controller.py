@@ -7,7 +7,7 @@ import math
 from dqrobotics.robot_modeling import DQ_Kinematics, DQ_SerialManipulator
 from dqrobotics.utils import DQ_Geometry
 from dqrobotics import *
-from dqrobotics.solvers import DQ_QuadprogSolver
+from dqrobotics.solvers import DQ_QuadraticProgrammingSolver as DQ_QuadprogSolver
 
 import numpy as np
 from termcolor import cprint
@@ -188,7 +188,7 @@ class ICRA19TaskSpaceController:
 
                 if self.verbose:
                     print(f"RCM {constraint_counter} signed error = {w_c[0]}")
-                    if w_c < 0:
+                    if w_c[0] < 0:
                         cprint(f"     ↑↑↑Constraint violation: {math.sqrt(-w_c[0])}", "red")
                     constraint_counter += 1
 

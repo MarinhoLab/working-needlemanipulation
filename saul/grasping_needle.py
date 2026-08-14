@@ -149,7 +149,7 @@ needle_controller = NeedleController(
             (rrcm1["position"], rrcm1["radius"], rcm1_joint_index),
             (rrcm2["position"], rrcm2["radius"], rcm2_joint_index)],
         relative_needle_pose=relative_needle_pose,
-        vessel_position=vessel_point,
+        vessel_positions=[vessel_point],
         needle_radius=radius,
         vfi_gain=2,
         verbose=True,
