@@ -1,8 +1,8 @@
 [build-system]
 requires = [
-    "setuptools>=61",
+    "setuptools>=42",
     "wheel",
-    "setuptools-scm>=8",
+    "setuptools-git-versioning>=2.0,<3",
     "ninja",
     "cmake>=3.15",
 ]
@@ -40,10 +40,11 @@ include = ["marinholab*"]
 [tool.setuptools.package-data]
 "marinholab.working.needlemanipulation" = ["*.yaml", "py.typed", "*.pyi"]
 
-# https://setuptools-scm.readthedocs.io/
-[tool.setuptools_scm]
-version_file = "marinholab/_version.py"
-local_scheme = "no-local-version"
+# https://pypi.org/project/setuptools-git-versioning/
+[tool.setuptools-git-versioning]
+enabled = true
+dev_template = "{tag}.{ccount}"
+dirty_template = "{tag}.{ccount}"
 
 [tool.pyright]
 typeCheckingMode = "standard"
