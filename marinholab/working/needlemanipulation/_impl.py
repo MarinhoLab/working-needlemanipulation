@@ -2,8 +2,11 @@
 Copyright (C) 2025-26 Murilo Marques Marinho (www.murilomarinho.info)
 LGPLv3 License
 """
+from __future__ import annotations
 
 import math
+from typing import TYPE_CHECKING
+
 import numpy as np
 from dqrobotics import *
 from dqrobotics._dqrobotics import DQ
@@ -11,25 +14,50 @@ from dqrobotics.utils import DQ_Geometry
 from dqrobotics.robot_modeling import DQ_Kinematics
 from termcolor import cprint
 
-def rotation_axis_jacobian(primitive: DQ,
-                           r: DQ,
-                           Jr: np.ndarray):
-    """
-    https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8742769
-    See Eq (26)
-    Returns: The suitable Jacobian matrix.
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+
+
+def rotation_axis_jacobian(
+    primitive: DQ,
+    r: DQ,
+    Jr: NDArray[np.floating],
+) -> NDArray[np.floating]:
+    """Compute the rotation axis Jacobian.
+
+    See https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8742769 Eq (26).
+
+    Args:
+        primitive: The primitive dual quaternion.
+        r: The rotation dual quaternion.
+        Jr: The rotation Jacobian matrix.
+
+    Returns:
+        The suitable Jacobian matrix.
     """
     return haminus4(primitive * conj(r)) @ Jr \
            + hamiplus4(r * primitive) @ C4() @ Jr
 
-def normal_dot_product_jacobian(normal: DQ,
-                                primitive: DQ,
-                                r: DQ,
-                                Jr: np.ndarray) -> np.ndarray:
-    """
-    To keep the needle 'disk' vertical.
-    """
 
+def normal_dot_product_jacobian(
+    normal: DQ,
+    primitive: DQ,
+    r: DQ,
+    Jr: NDArray[np.floating],
+) -> NDArray[np.floating]:
+    """Compute the normal dot product Jacobian.
+
+    To keep the needle 'disk' vertical.
+
+    Args:
+        normal: The normal vector as a dual quaternion.
+        primitive: The primitive dual quaternion.
+        r: The rotation dual quaternion.
+        Jr: The rotation Jacobian matrix.
+
+    Returns:
+        The normal dot product Jacobian matrix.
+    """
     J_normal = vec4(normal).T @ rotation_axis_jacobian(primitive, r, Jr)
     return J_normal
 
@@ -66,23 +94,35 @@ def cone_jacobian():
     pass
 
 
-def needle_jacobian(Jx_needle,
-                    x_needle: DQ,
-                    ps_vessel: list[DQ],
-                    ns_vessel: list[DQ],
-                    planes_active: bool = True,
-                    spheres_active: bool = True,
-                    driving_angle_active: bool = True,
-                    insertion_angle_active: bool = False,
-                    needle_radius: float = None,
-                    ):
-    """
-    First idea, "needle" Jacobian. It is defined as J = [Jr Jpi]^T
-    x: The pose of the centre of the needle
-    Jx: The analytical Jacobian of the pose of the centre of the needle
-    ps_vessel: The positions of the entry points in the vessels
-    ns_vessel: The normals of the entry points in the vessels
-    needle_radius: The needle radius. If None, then the insertion constraint will not be calculated.
+def needle_jacobian(
+    Jx_needle: NDArray[np.floating],
+    x_needle: DQ,
+    ps_vessel: list[DQ],
+    ns_vessel: list[DQ],
+    planes_active: bool = True,
+    spheres_active: bool = True,
+    driving_angle_active: bool = True,
+    insertion_angle_active: bool = False,
+    needle_radius: float | None = None,
+) -> NDArray[np.floating] | None:
+    """Compute the "needle" Jacobian.
+
+    It is defined as J = [Jr Jpi]^T.
+
+    Args:
+        Jx_needle: The analytical Jacobian of the pose of the centre of the needle.
+        x_needle: The pose of the centre of the needle.
+        ps_vessel: The positions of the entry points in the vessels.
+        ns_vessel: The normals of the entry points in the vessels.
+        planes_active: Whether to include plane constraints.
+        spheres_active: Whether to include sphere constraints.
+        driving_angle_active: Whether to include driving angle constraints.
+        insertion_angle_active: Whether to include insertion angle constraints.
+        needle_radius: The needle radius. If None, the insertion constraint
+            will not be calculated.
+
+    Returns:
+        The needle Jacobian matrix, or None if no constraints were active.
     """
     p_needle = translation(x_needle)
     r_needle = rotation(x_needle)
@@ -139,27 +179,42 @@ def needle_jacobian(Jx_needle,
     return W_needle
 
 
-def needle_w(x_needle: DQ,
-             ps_vessel: list[DQ],
-             ns_vessel: list[DQ],
-             needle_radius: float,
-             vfi_gain_planes: float,
-             vfi_gain_radius: float,
-             vfi_gain_angles: float,
-             vfi_gain_needle_insertion_angles: float,
-             d_safe_planes: float,
-             d_safe_radius: float,
-             d_safe_angles: float,
-             d_safe_needle_insertion_angles: float = None,
-             verbose: bool = True):
-    """
-    ns_vessel: If not none, the first item will be the insertion point (the first one the needle passes through)
-    and the second item will be the extraction point (the second point the needle passes through).
+def needle_w(
+    x_needle: DQ,
+    ps_vessel: list[DQ],
+    ns_vessel: list[DQ],
+    needle_radius: float,
+    vfi_gain_planes: float,
+    vfi_gain_radius: float,
+    vfi_gain_angles: float,
+    vfi_gain_needle_insertion_angles: float,
+    d_safe_planes: float | None,
+    d_safe_radius: float | None,
+    d_safe_angles: float | None,
+    d_safe_needle_insertion_angles: float | None = None,
+    verbose: bool = True,
+) -> NDArray[np.floating] | None:
+    """Compute the needle violation field indicator vector.
 
-    First idea, "needle" Jacobian. It is defined as J = [Jr Jpi]^T
-    x_needle: The pose of the centre of the needle
-    p_vessel: The position of the entry point in the vessel
-    needle_radius: The radius of the needle
+    Args:
+        x_needle: The pose of the centre of the needle.
+        ps_vessel: The positions of the entry points in the vessels.
+        ns_vessel: If not None, the first item is the insertion point and
+            the second is the extraction point.
+        needle_radius: The radius of the needle.
+        vfi_gain_planes: VFI gain for plane constraints.
+        vfi_gain_radius: VFI gain for radius constraints.
+        vfi_gain_angles: VFI gain for angle constraints.
+        vfi_gain_needle_insertion_angles: VFI gain for insertion angle constraints.
+        d_safe_planes: Safe distance for plane constraints, or None to disable.
+        d_safe_radius: Safe distance for radius constraints, or None to disable.
+        d_safe_angles: Safe distance for angle constraints, or None to disable.
+        d_safe_needle_insertion_angles: Safe distance for insertion angle constraints,
+            or None to disable.
+        verbose: Whether to print constraint diagnostics.
+
+    Returns:
+        The needle VFI vector, or None if no constraints were active.
     """
     p_needle = translation(x_needle)
     r_needle = rotation(x_needle)
