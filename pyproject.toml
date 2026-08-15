@@ -43,6 +43,7 @@ include = ["marinholab*"]
 # https://setuptools-scm.readthedocs.io/
 [tool.setuptools_scm]
 version_file = "marinholab/_version.py"
+local_scheme = "no-local-version"
 
 [tool.pyright]
 typeCheckingMode = "standard"
