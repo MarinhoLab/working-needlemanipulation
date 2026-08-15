@@ -6,7 +6,7 @@ import time
 import numpy as np
 from math import sin, cos
 
-from dqrobotics import *
+from dqrobotics import DQ, conj, k_, vec8
 from dqrobotics.robot_control import DQ_PseudoinverseController, ControlObjective
 from dqrobotics.interfaces.coppeliasim import DQ_CoppeliaSimInterfaceZMQ
 from marinholab.working.needlemanipulation import M3_SerialManipulatorSimulatorFriendly

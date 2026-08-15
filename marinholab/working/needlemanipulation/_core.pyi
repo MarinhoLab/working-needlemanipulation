@@ -31,12 +31,12 @@ class ActuationType:
     TX: Translation along the x-axis.
     """
 
-    RZ: Self
-    RY: Self
-    RX: Self
-    TZ: Self
-    TY: Self
-    TX: Self
+    RZ: ActuationType
+    RY: ActuationType
+    RX: ActuationType
+    TZ: ActuationType
+    TY: ActuationType
+    TX: ActuationType
 
 
 class M3_SerialManipulatorSimulatorFriendly(DQ_SerialManipulator):
