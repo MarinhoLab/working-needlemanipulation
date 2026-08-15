@@ -7,7 +7,7 @@ from __future__ import annotations
 from importlib.resources import files
 
 import yaml
-from dqrobotics import *
+from dqrobotics import DQ
 from marinholab.working.needlemanipulation import M3_SerialManipulatorSimulatorFriendly
 from marinholab.working.needlemanipulation.icra2019_controller import ICRA19TaskSpaceController
 try:

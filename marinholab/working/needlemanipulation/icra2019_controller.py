@@ -8,7 +8,21 @@ import math
 from typing import TYPE_CHECKING
 
 import numpy as np
-from dqrobotics import *
+from dqrobotics import (
+    Ad,
+    C4,
+    DQ,
+    E_,
+    conj,
+    cross,
+    haminus4,
+    is_unit,
+    k_,
+    rotation,
+    translation,
+    vec4,
+    vec8,
+)
 from dqrobotics.robot_modeling import DQ_Kinematics, DQ_SerialManipulator
 from dqrobotics.solvers import DQ_QuadraticProgrammingSolver as DQ_QuadprogSolver
 from dqrobotics.utils import DQ_Geometry

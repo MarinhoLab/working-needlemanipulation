@@ -1,15 +1,19 @@
 [build-system]
 requires = [
-    "setuptools>=42",
+    "setuptools>=61",
     "wheel",
+    "setuptools-scm>=8",
     "ninja",
-    "cmake>=3.12",
-    "setuptools-git-versioning>=2.0,<3"
+    "cmake>=3.15",
 ]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = 'marinholab-working-needlemanipulation'
+name = "marinholab-working-needlemanipulation"
+description = "Ongoing work on needle manipulation in a collaboration between UTokyo and UoM."
+readme = "README.md"
+requires-python = ">= 3.9"
+license = {text = "MIT"}
 authors = [
     {name = "Murilo M. Marinho", email = "murilomarinho@ieee.org"}
 ]
@@ -17,31 +21,28 @@ maintainers = [
     {name = "Murilo M. Marinho", email = "murilomarinho@ieee.org"}
 ]
 dynamic = ["version"]
-dependencies=[
-    'dqrobotics>=23.4.0a49',
-    'quadprog',
-    'termcolor',
-    'pyyaml'
+dependencies = [
+    "dqrobotics>=23.4.0a49",
+    "quadprog",
+    "termcolor",
+    "pyyaml",
 ]
-description = "Ongoing work on needle manipulation in a collaboration between UTokyo and UoM."
-readme = "README.md"
-requires-python = ">= 3.9"
-
-[tool.setuptools.package-data]
-"marinholab.working.needlemanipulation" = ["*.yaml", "py.typed", "*.pyi"]
-
-# https://pypi.org/project/setuptools-git-versioning/
-[tool.setuptools-git-versioning]
-enabled = true
-# https://stackoverflow.com/questions/73605607/how-to-use-setuptools-scm
-dev_template = "{tag}.{ccount}"
-dirty_template = "{tag}.{ccount}"
 
 [project.scripts]
 needlemanipulation_example = "marinholab.working.needlemanipulation.example:main"
 needlemanipulation_example_load_from_file = "marinholab.working.needlemanipulation.example_load_from_file:main"
 needlemanipulation_example_kinematics_from_coppeliasim = "marinholab.working.needlemanipulation.example_kinematics_from_coppeliasim:main"
 needlemanipulation_example_create_needle_controller = "marinholab.working.needlemanipulation.example_create_needle_controller:main"
+
+[tool.setuptools.packages.find]
+include = ["marinholab*"]
+
+[tool.setuptools.package-data]
+"marinholab.working.needlemanipulation" = ["*.yaml", "py.typed", "*.pyi"]
+
+# https://setuptools-scm.readthedocs.io/
+[tool.setuptools_scm]
+version_file = "marinholab/_version.py"
 
 [tool.pyright]
 typeCheckingMode = "standard"

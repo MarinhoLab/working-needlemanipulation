@@ -5,11 +5,11 @@ LGPLv3 License
 import numpy as np
 import math
 
-from marinholab.working.needlemanipulation.icra2019_controller import ICRA19TaskSpaceController
-from dqrobotics import *
+from dqrobotics import DQ, haminus8, is_unit
 from dqrobotics.robot_modeling import DQ_SerialManipulator
 
 from marinholab.working.needlemanipulation import needle_jacobian, needle_w
+from marinholab.working.needlemanipulation.icra2019_controller import ICRA19TaskSpaceController
 
 class NeedleController(ICRA19TaskSpaceController):
     def __init__(self,

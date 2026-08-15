@@ -3,7 +3,7 @@ Copyright (C) 2025 Murilo Marques Marinho (www.murilomarinho.info)
 LGPLv3 License
 """
 from importlib.resources import files
-from dqrobotics import *
+from dqrobotics import DQ
 
 from marinholab.working.needlemanipulation import NeedleController
 from marinholab.working.needlemanipulation.example_load_from_file import get_information_from_file
