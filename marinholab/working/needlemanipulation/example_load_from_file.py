@@ -2,7 +2,10 @@
 Copyright (C) 2025 Murilo Marques Marinho (www.murilomarinho.info)
 LGPLv3 License
 """
+from __future__ import annotations
+
 from importlib.resources import files
+
 import yaml
 from dqrobotics import *
 from marinholab.working.needlemanipulation import M3_SerialManipulatorSimulatorFriendly
@@ -31,7 +34,9 @@ def _set_plot_limits(lmin: float = -0.5, lmax: float = 0.5):
         zlim=[lmin, lmax]
     )
 
-def get_information_from_file(file_contents: str) -> (M3_SerialManipulatorSimulatorFriendly, tuple[DQ, float], tuple[DQ, float]):
+def get_information_from_file(
+    file_contents: str,
+) -> tuple[M3_SerialManipulatorSimulatorFriendly, dict, dict]:
     """
     The actuation types must be a list of strings. Currently, only 'RX' is accepted.
     The offsets must be a list of DQ objects. They will be normalized.

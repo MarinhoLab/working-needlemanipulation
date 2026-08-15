@@ -2,15 +2,20 @@
 Copyright (C) 2020-25 Murilo Marques Marinho (www.murilomarinho.info)
 LGPLv3 License
 """
-import math
+from __future__ import annotations
 
-from dqrobotics.robot_modeling import DQ_Kinematics, DQ_SerialManipulator
-from dqrobotics.utils import DQ_Geometry
-from dqrobotics import *
-from dqrobotics.solvers import DQ_QuadraticProgrammingSolver as DQ_QuadprogSolver
+import math
+from typing import TYPE_CHECKING
 
 import numpy as np
+from dqrobotics import *
+from dqrobotics.robot_modeling import DQ_Kinematics, DQ_SerialManipulator
+from dqrobotics.solvers import DQ_QuadraticProgrammingSolver as DQ_QuadprogSolver
+from dqrobotics.utils import DQ_Geometry
 from termcolor import cprint
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
 
 
 class ICRA19TaskSpaceController:
@@ -73,31 +78,33 @@ class ICRA19TaskSpaceController:
 
 
     @staticmethod
-    def get_rcm_constraint(Jx: np.array,
-                           x: DQ,
-                           primitive: DQ,
-                           p: DQ,
-                           d_safe: float,
-                           eta_d: float,
-                           ) -> (np.array, np.array):
-        """
-        This static method computes the Remote Centre of Motion (RCM) constraint
-        for the end-effector represented by x and its Jacobian Jx. It calculates the
-        inequality matrix and vector that ensure the minimum safe squared distance (d_safe) between a line
-        and a point is maintained during motion.
+    def get_rcm_constraint(
+        Jx: np.ndarray,
+        x: DQ,
+        primitive: DQ,
+        p: DQ,
+        d_safe: float,
+        eta_d: float,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Compute the Remote Centre of Motion (RCM) constraint.
 
-        :param Jx: The pose Jacobian of the robot.
-        :param x: The current pose of the end-effector, compatible with Jx.
-        :param primitive: The primitive in the end-effector in which the line is spanned. For instance i_, j_, or k_.
-        :param p: The centre of the RCM constraint, represented as a pure quaternion.
-        :param d_safe: The safe distance (float) to maintain between the line and the
-            point, squared internally in the calculation.
-        :param eta_d: VFI gain.
-        :return: A tuple containing:
-            - W (np.array): The inequality constraint matrix derived from the line-to-point
-              distance Jacobian.
-            - w (np.array): The inequality constraint vector determined by the distance
-              error and safety distance.
+        Calculates the inequality matrix and vector that ensure the minimum
+        safe squared distance (d_safe) between a line and a point is
+        maintained during motion.
+
+        Args:
+            Jx: The pose Jacobian of the robot.
+            x: The current pose of the end-effector, compatible with Jx.
+            primitive: The primitive in the end-effector in which the line is
+                spanned. For instance i_, j_, or k_.
+            p: The centre of the RCM constraint, represented as a pure quaternion.
+            d_safe: The safe distance to maintain between the line and the
+                point, squared internally in the calculation.
+            eta_d: VFI gain.
+
+        Returns:
+            A tuple (W, w) where W is the inequality constraint matrix and
+            w is the inequality constraint vector.
         """
 
         # Get the line Jacobian for the primitive

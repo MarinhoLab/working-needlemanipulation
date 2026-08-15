@@ -28,7 +28,7 @@ readme = "README.md"
 requires-python = ">= 3.9"
 
 [tool.setuptools.package-data]
-mypkg = ["*.yaml"]
+"marinholab.working.needlemanipulation" = ["*.yaml", "py.typed", "*.pyi"]
 
 # https://pypi.org/project/setuptools-git-versioning/
 [tool.setuptools-git-versioning]
@@ -42,3 +42,13 @@ needlemanipulation_example = "marinholab.working.needlemanipulation.example:main
 needlemanipulation_example_load_from_file = "marinholab.working.needlemanipulation.example_load_from_file:main"
 needlemanipulation_example_kinematics_from_coppeliasim = "marinholab.working.needlemanipulation.example_kinematics_from_coppeliasim:main"
 needlemanipulation_example_create_needle_controller = "marinholab.working.needlemanipulation.example_create_needle_controller:main"
+
+[tool.pyright]
+typeCheckingMode = "standard"
+pythonVersion = "3.9"
+include = ["marinholab"]
+exclude = [
+    "**/example*.py",
+]
+venvPath = "."
+venv = ""
