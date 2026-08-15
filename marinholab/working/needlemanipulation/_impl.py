@@ -170,7 +170,6 @@ def needle_w(x_needle: DQ,
         current_radius_squared = DQ_Geometry.point_to_point_squared_distance(p_needle, p_vessel)
         needle_radius_squared = needle_radius ** 2
 
-        r_needle = rotation(x_needle)
         n_needle = r_needle * k_ * conj(r_needle)
         d_needle = dot(p_needle, n_needle)
         pi_needle = n_needle + E_ * d_needle
@@ -185,9 +184,9 @@ def needle_w(x_needle: DQ,
             plane_error_two = current_plane_distance - (-d_safe_planes)
 
             # Add plane constraints
-            w = np.vstack((2.0 * vfi_gain_planes * plane_error_one,
-                           2.0 * vfi_gain_planes * plane_error_two,
-                           w)) if w is not None else w
+            plane_w = np.array([2.0 * vfi_gain_planes * plane_error_one,
+                                2.0 * vfi_gain_planes * plane_error_two])
+            w = np.vstack((w, plane_w)) if w is not None else plane_w
 
             if verbose:
                 print(f"Upper plane {d_safe_planes - current_plane_distance}")
@@ -215,9 +214,9 @@ def needle_w(x_needle: DQ,
                     cprint(f"     ↑↑↑Constraint violation: {math.sqrt(-radius_error_two)}", "red")
 
             # Add radius constraints
-            w = np.vstack((vfi_gain_radius * radius_error_one,
-                          vfi_gain_radius * radius_error_two,
-                           w)) if w is not None else w
+            radius_w = np.array([vfi_gain_radius * radius_error_one,
+                                 vfi_gain_radius * radius_error_two])
+            w = np.vstack((w, radius_w)) if w is not None else radius_w
 
 
 

@@ -108,8 +108,8 @@ def example_plot(q, robot, rcm1, rcm2):
     ax.set_zlabel('$z$')
 
     dqp.plot(robot, q=q)
-    dqp.plot(rcm1["position"], sphere=True, radius=rcm1["diameter"], color="red", alpha=0.5)
-    dqp.plot(rcm2["position"], sphere=True, radius=rcm2["diameter"], color="blue", alpha=0.5)
+    dqp.plot(rcm1["position"], sphere=True, radius=rcm1["radius"], color="red", alpha=0.5)
+    dqp.plot(rcm2["position"], sphere=True, radius=rcm2["radius"], color="blue", alpha=0.5)
 
     plt.show(block=True)
 
@@ -124,8 +124,8 @@ def main():
             damping=0.01,
             alpha=0.999,
             rcm_constraints=[
-                (lrcm1["position"], lrcm1["radius"]),
-                (lrcm2["position"], lrcm2["radius"])]
+                (lrcm1["position"], lrcm1["radius"], 6),
+                (lrcm2["position"], lrcm2["radius"], 6)]
         )
 
         q_init = [0, 0, 0, 0, 0, 0, 0, 0, 0]

@@ -90,7 +90,7 @@ class NeedleController(ICRA19TaskSpaceController):
         )#needle_radius: float = None)
 
         # VFI w
-        w_needle = needle_w(
+        w_needle_raw = needle_w(
             x_needle=x_needle,
             ps_vessel=self.vessel_positions,
             ns_vessel=self.vessel_normals if hasattr(self,"vessel_normals") else None,
@@ -103,14 +103,19 @@ class NeedleController(ICRA19TaskSpaceController):
             d_safe_angles=self.d_safe_angles if hasattr(self,"d_safe_angles") else None, #math.pi/4,
             d_safe_needle_insertion_angles=self.d_safe_needle_insertion_angles if hasattr(self,"d_safe_needle_insertion_angles") else None,
             verbose=self.verbose
-        ).reshape((W_needle.shape[0],))
+        )
 
-        if W is not None and w is not None:
-            W = np.vstack((W, W_needle))
-            w = np.hstack((w, w_needle))
-        else:
-            W = W_needle
-            w = w_needle
+        if W_needle is not None and w_needle_raw is not None:
+            w_needle = w_needle_raw.reshape((W_needle.shape[0],))
+            if W is not None and w is not None:
+                W = np.vstack((W, W_needle))
+                w = np.hstack((w, w_needle))
+            else:
+                W = W_needle
+                w = w_needle
+        elif W is None or w is None:
+            W = np.zeros((DOF, DOF))
+            w = np.zeros(DOF)
 
         u = self.qp_solver.solve_quadratic_program(H, f, W, np.squeeze(w), None, None)
 

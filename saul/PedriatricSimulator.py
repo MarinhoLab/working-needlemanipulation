@@ -1,6 +1,7 @@
 import socket
 from threading import Lock
 
+import cv2
 import dqrobotics
 import numpy as np
 
