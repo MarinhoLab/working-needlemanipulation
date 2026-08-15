@@ -1,1 +1,3 @@
 include marinholab/working/needlemanipulation/*.yaml
+include marinholab/working/needlemanipulation/py.typed
+include marinholab/working/needlemanipulation/*.pyi

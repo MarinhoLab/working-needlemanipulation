@@ -135,10 +135,16 @@ class CMakeBuild(build_ext):
 setup(
     license="MIT",
     packages=[
+        "marinholab",
+        "marinholab.working",
         "marinholab.working.needlemanipulation",
     ],
     ext_modules=[CMakeExtension('marinholab.working.needlemanipulation._core')],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
+    use_scm_version={
+        "write_to": "marinholab/_version.py",
+    },
+    setup_requires=["setuptools_scm"],
 )
 
