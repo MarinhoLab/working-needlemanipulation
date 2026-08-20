@@ -35,9 +35,16 @@ full suite runs without building the C++ extension. Run from the repo root:
 /tmp/venv-test/bin/python -m pytest tests/ -v
 ```
 
-## Known pre-existing issue (not fixed here)
+## CI build job: do not cache `build/`
 
-The C++ build fails intermittently in CI because the vendored pybind11
-submodule's `find_package(Python)` is incompatible with CMake 4.x
-(`Configuring incomplete, errors occurred!`). This fails on `main` too; the
-failing matrix cell varies between runs.
+The C++ build configures CMake with its binary directory inside `build/`, so
+`build/CMakeCache.txt` pins the exact Python path from
+`/opt/hostedtoolcache` (e.g. `.../Python/3.12.13/x64`) at configure time. The
+cache key for that directory used to be keyed on the minor Python version
+(3.10/3.11/3.12) plus source-file hashes, so after a runner-image Python
+update (3.12.13 -> 3.12.14) the restored cache pointed at a deleted install
+dir and configure failed with
+`Could NOT find Python ... Cannot run the interpreter ...` (the `-DPYTHON_EXECUTABLE`
+CLI flag cannot override an existing `CMakeCache.txt` entry). This made the
+failing matrix cells vary between runs and is NOT a pybind11/CMake 4.x
+incompatibility. Fix: the workflow caches only the pip cache, not `build/`.

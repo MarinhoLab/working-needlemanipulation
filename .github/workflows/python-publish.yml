@@ -57,14 +57,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libeigen3-dev build-essential
-      - name: Cache CMake build (Ubuntu)
-        if: runner.os == 'Linux'
-        uses: actions/cache@v4
-        with:
-          path: build/
-          key: ${{ runner.os }}-cmake-${{ matrix.python-version }}-${{ hashFiles('CMakeLists.txt', 'src/*.cpp', 'include/*.h') }}
-          restore-keys: |
-            ${{ runner.os }}-cmake-${{ matrix.python-version }}-
       - name: Cache pip (Ubuntu)
         if: runner.os == 'Linux'
         uses: actions/cache@v4
