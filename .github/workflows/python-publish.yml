@@ -46,10 +46,15 @@ jobs:
       - name: Init submodules
         run: |
           git submodule update --init --recursive
+      # cache: pip caches the global pip wheel cache; the key is
+      # setup-python-<os>-pip-<hash of pyproject.toml> (auto-detected).
+      # This is safe for a pure download cache (unlike the old build/
+      # CMake cache, it contains no paths or compiled state).
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          cache: 'pip'
 
       # ── Ubuntu dependencies ──────────────────────────────────────
       - name: Install system dependencies (Ubuntu)
@@ -57,14 +62,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libeigen3-dev build-essential
-      - name: Cache pip (Ubuntu)
-        if: runner.os == 'Linux'
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python-version }}-
 
       # ── Windows dependencies ─────────────────────────────────────
       - name: Install compilation dependencies (Windows)
@@ -76,14 +73,6 @@ jobs:
           vcpkg install eigen3:x64-windows
           cmd /c mklink /d c:\Tools\vcpkg c:\vcpkg 2>$null || true
           cd ~
-      - name: Cache pip (Windows)
-        if: runner.os == 'Windows'
-        uses: actions/cache@v4
-        with:
-          path: ~\AppData\Local\pip\Cache
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python-version }}-
 
       # ── Build ────────────────────────────────────────────────────
       - name: Install build tool
