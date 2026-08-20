@@ -34,6 +34,8 @@ class NeedleController(ICRA19TaskSpaceController):
             self.vfi_gain_radius = kwargs["vfi_gain_radius"]
         if "vfi_gain_angles" in kwargs:
             self.vfi_gain_angles = kwargs["vfi_gain_angles"]
+        if "vfi_gain_needle_insertion_angles" in kwargs:
+            self.vfi_gain_needle_insertion_angles = kwargs["vfi_gain_needle_insertion_angles"]
 
         self.planes_active = "d_safe_planes" in kwargs
         if "d_safe_planes" in kwargs:
@@ -98,6 +100,7 @@ class NeedleController(ICRA19TaskSpaceController):
             vfi_gain_planes=self.vfi_gain_planes if hasattr(self,"vfi_gain_planes") else self.vfi_gain,
             vfi_gain_radius=self.vfi_gain_radius if hasattr(self,"vfi_gain_radius") else self.vfi_gain,
             vfi_gain_angles=self.vfi_gain_angles if hasattr(self, "vfi_gain_angles") else self.vfi_gain,
+            vfi_gain_needle_insertion_angles=self.vfi_gain_needle_insertion_angles if hasattr(self, "vfi_gain_needle_insertion_angles") else self.vfi_gain,
             d_safe_planes=self.d_safe_planes if hasattr(self,"d_safe_planes") else None, #0.0005,
             d_safe_radius=self.d_safe_radius if hasattr(self,"d_safe_radius") else None, #0.0005,
             d_safe_angles=self.d_safe_angles if hasattr(self,"d_safe_angles") else None, #math.pi/4,

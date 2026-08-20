@@ -8,11 +8,28 @@ from math import sin, cos
 
 from dqrobotics import DQ, conj, k_, vec8
 from dqrobotics.robot_control import DQ_PseudoinverseController, ControlObjective
-from dqrobotics.interfaces.coppeliasim import DQ_CoppeliaSimInterfaceZMQ
 from marinholab.working.needlemanipulation import M3_SerialManipulatorSimulatorFriendly
+
+# The CoppeliaSim interface is an optional, platform-dependent part of dqrobotics
+# (it is not compiled into every released dqrobotics wheel). Import it lazily so
+# that installing/importing this package does not fail on builds that lack it.
+DQ_CoppeliaSimInterfaceZMQ = None
+_coppeliasim_import_error = None
+try:
+    from dqrobotics.interfaces.coppeliasim import DQ_CoppeliaSimInterfaceZMQ
+except ImportError as _exc:  # pragma: no cover - env dependent
+    _coppeliasim_import_error = _exc
 
 
 def main():
+
+    if DQ_CoppeliaSimInterfaceZMQ is None:
+        raise ImportError(
+            "This example requires the CoppeliaSim interface, which is not available "
+            "in the installed version of dqrobotics "
+            "(dqrobotics.interfaces.coppeliasim). Install a dqrobotics build that "
+            "includes the CoppeliaSim interface to run this example."
+        ) from _coppeliasim_import_error
 
     ci = DQ_CoppeliaSimInterfaceZMQ()
     if not ci.connect():

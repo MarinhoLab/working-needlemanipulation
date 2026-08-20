@@ -12,7 +12,7 @@ build-backend = "setuptools.build_meta"
 name = "marinholab-working-needlemanipulation"
 description = "Ongoing work on needle manipulation in a collaboration between UTokyo and UoM."
 readme = "README.md"
-requires-python = ">= 3.9"
+requires-python = ">= 3.10"
 license = {text = "MIT"}
 authors = [
     {name = "Murilo M. Marinho", email = "murilomarinho@ieee.org"}
@@ -48,7 +48,7 @@ dirty_template = "{tag}.{ccount}"
 
 [tool.pyright]
 typeCheckingMode = "standard"
-pythonVersion = "3.9"
+pythonVersion = "3.10"
 include = ["marinholab"]
 exclude = [
     "**/example*.py",

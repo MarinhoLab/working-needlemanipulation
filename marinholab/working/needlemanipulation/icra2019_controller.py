@@ -24,7 +24,7 @@ from dqrobotics import (
     vec8,
 )
 from dqrobotics.robot_modeling import DQ_Kinematics, DQ_SerialManipulator
-from dqrobotics.solvers import DQ_QuadraticProgrammingSolver as DQ_QuadprogSolver
+from dqrobotics.solvers import DQ_QuadprogSolver
 from dqrobotics.utils import DQ_Geometry
 from termcolor import cprint
 
