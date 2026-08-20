@@ -5,6 +5,11 @@ LGPLv3 License
 Needle manipulation package providing task-space controllers for surgical robotics.
 """
 
+# Re-export the full dqrobotics namespace at the package root for backward
+# compatibility with releases up to 25.6.0.66, which exposed every dqrobotics
+# symbol (DQ, k_, conj, haminus8, ...) via ``from dqrobotics import *``.
+from dqrobotics import *  # noqa: F403
+import dqrobotics as _dqrobotics
 from dqrobotics.robot_modeling import DQ_SerialManipulator
 from marinholab.working.needlemanipulation._core import (
     M3_SerialManipulatorSimulatorFriendly,
@@ -28,3 +33,7 @@ __all__ = [
     "ICRA19TaskSpaceController",
     "NeedleController",
 ]
+# Expose the dqrobotics symbols pulled in by the star import above so that
+# ``from marinholab.working.needlemanipulation import *`` keeps working as it
+# did in 25.6.0.66.
+__all__ += [n for n in dir(_dqrobotics) if not n.startswith("_")]

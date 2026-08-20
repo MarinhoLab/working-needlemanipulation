@@ -316,8 +316,8 @@ def needle_w(
                 cprint(f"     ↑↑↑Constraint violation needle insertion: {dot_error_two}", "red")
 
         # Times two because it's not quadratic
-        w = np.vstack((2.0 * vfi_gain_needle_insertion_angles * dot_error_one,
-                       2.0 * vfi_gain_needle_insertion_angles * dot_error_two))
+        w = np.array([2.0 * vfi_gain_needle_insertion_angles * dot_error_one,
+                      2.0 * vfi_gain_needle_insertion_angles * dot_error_two])
 
         w_needle = (np.vstack((w_needle, w)) if w_needle is not None else w)
 
@@ -342,8 +342,8 @@ def needle_w(
                     cprint(f"     ↑↑↑Constraint violation: {dot_error_two}", "red")
 
             # Times two because it's not quadratic
-            w = np.vstack((2.0 * vfi_gain_angles * dot_error_one,
-                           2.0 * vfi_gain_angles * dot_error_two))
+            w = np.array([2.0 * vfi_gain_angles * dot_error_one,
+                          2.0 * vfi_gain_angles * dot_error_two])
 
             w_needle = (np.vstack((w_needle, w)) if w_needle is not None else w)
 
