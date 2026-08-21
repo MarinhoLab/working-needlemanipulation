@@ -57,11 +57,12 @@ jobs:
           cache: 'pip'
 
       # ── Ubuntu dependencies ──────────────────────────────────────
+      # patchelf is a native prerequisite of `auditwheel repair` below.
       - name: Install system dependencies (Ubuntu)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libeigen3-dev build-essential
+          sudo apt-get install -y libeigen3-dev build-essential patchelf
 
       # ── Windows dependencies ─────────────────────────────────────
       - name: Install compilation dependencies (Windows)
@@ -82,6 +83,28 @@ jobs:
       - name: Build wheel
         run: |
           python -m build --wheel
+
+      # PyPI rejects binary wheels tagged `linux_x86_64`/`linux_aarch64`
+      # (it requires a PEP 600 `manylinux` tag). auditwheel relinks the
+      # extension against system libs, bundles anything it can't, and
+      # retags it as `manylinux_*`.
+      # - --plat auto picks the tightest compatible tag from the wheel's
+      #   actual symbols (e.g. manylinux_2_24) — hardcoding a glibc-based
+      #   tag can fail the build. repair also fails on unsupported
+      #   symbols, which gates the build.
+      # - The input glob must stay arch-scoped: a repaired
+      #   `manylinux_2_X_<arch>.whl` still matches a bare `*linux_*.whl`
+      #   but never `*linux_<arch>.whl`, so re-running can't pick it up.
+      # - repair leaves the original wheel in dist/, so the `linux_*`
+      #   wheel is removed before upload (would be a second 400 on PyPI).
+      - name: Repair wheel (Linux, manylinux tag)
+        if: runner.os == 'Linux'
+        run: |
+          pip install auditwheel
+          arch=$([[ "${{ matrix.os }}" == "ubuntu-latest" ]] && echo x86_64 || echo aarch64)
+          auditwheel repair --plat auto -w dist/ dist/*linux_${arch}.whl
+          rm -f dist/*linux_${arch}.whl
+
       - name: Upload wheel artifact
         uses: actions/upload-artifact@v4
         with:
