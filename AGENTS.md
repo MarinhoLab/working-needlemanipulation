@@ -48,3 +48,15 @@ dir and configure failed with
 CLI flag cannot override an existing `CMakeCache.txt` entry). This made the
 failing matrix cells vary between runs and is NOT a pybind11/CMake 4.x
 incompatibility. Fix: the workflow caches only the pip cache, not `build/`.
+
+## CI publish job: Linux wheels must be `manylinux`-tagged
+
+`_core` is a binary extension, so the Linux wheels are binary wheels too.
+PyPI's upload endpoint rejects binary wheels with a `linux_x86_64`/
+`linux_aarch64` platform tag with HTTP 400 `unsupported platform tag` — they
+must carry a PEP 600 `manylinux` tag. That is why the build job runs
+`auditwheel repair --plat auto` (and installs `patchelf`) on Linux before
+uploading the artifact. Do not drop that step, and do not hand a pinned
+`manylinux_2_X` tag: `--plat auto` derives the tag from the wheel's actual
+symbols (e.g. `manylinux_2_24`), while a pinned glibc-based tag that is
+stricter than the symbols allow makes `repair` fail the build.
