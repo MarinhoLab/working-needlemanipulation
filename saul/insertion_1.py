@@ -112,22 +112,12 @@ needle_controller = NeedleController(
         needle_radius=radius,
         d_safe_angles=np.pi / 8.0,
         vfi_gain=1.0,
-        verbose=False
+        verbose=True,
+        insertion_constraints=True
     )
 
-print(f"rrcm1_position = {rrcm1['position']}")
-print(f"rrcm1_radius = {rrcm1['radius']}")
-print(f"rrcm1_joint_index = {rcm1_joint_index}")
-print(f"rrcm2_position = {rrcm2['position']}")
-print(f"rrcm2_radius = {rrcm2['radius']}")
-print(f"rrcm2_joint_index = {rcm2_joint_index}")
-print(f"relative_needle_pose = {relative_needle_pose}")
-print(f"vessel_positions = {[dq.translation(p1)]}")
-print(f"vessel_normals = {[dq.rotation(p1)]}")
-print(f"needle_radius = {radius}")
-
 q = sim.get_right_robot_joints()
-for i in range(1000):
+for i in range(200):
     print(i)
     sim.set_frame("needle", sim.get_control_needle_pose())
 
@@ -150,6 +140,37 @@ for i in range(1000):
     sim.set_right_robot_joints(q)
 
     time.sleep(1.0 / 60.0)
+
+
+
+
+
+
+
+
+sim.clear_frames()
+
+needle_frame = sim.get_control_needle_pose()
+x = sim.get_right_robot_effector()
+x_wrt_needle_frame = dq.conj(needle_frame) * x
+
+# insert needle
+for i in range(300):
+
+    angle = 0.001 * i * math.pi / 2.0
+    rotate = math.cos(angle / 2.0) + math.sin(angle / 2.0) * (dq.i_ * 0.0 + dq.j_ * 0.0 + dq.k_ * 1.0)
+
+    translate = 1 + 0.5 * dq.E_ * (dq.i_ * 0.0 + dq.j_ * -0.00001 * i + dq.k_ * 0.0)
+
+    xd = translate * needle_frame * rotate * x_wrt_needle_frame
+
+    sim.set_frame("xd", xd)
+    sim.set_frame("x", sim.get_right_robot_effector())
+
+    sim.set_right_robot_target_pose(xd)
+
+    time.sleep(1/60)
+
 
 
 sim.disconnect()

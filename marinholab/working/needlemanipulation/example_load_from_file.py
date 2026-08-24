@@ -2,12 +2,9 @@
 Copyright (C) 2025 Murilo Marques Marinho (www.murilomarinho.info)
 LGPLv3 License
 """
-from __future__ import annotations
-
 from importlib.resources import files
-
 import yaml
-from dqrobotics import DQ
+from dqrobotics import *
 from marinholab.working.needlemanipulation import M3_SerialManipulatorSimulatorFriendly
 from marinholab.working.needlemanipulation.icra2019_controller import ICRA19TaskSpaceController
 try:
@@ -34,9 +31,7 @@ def _set_plot_limits(lmin: float = -0.5, lmax: float = 0.5):
         zlim=[lmin, lmax]
     )
 
-def get_information_from_file(
-    file_contents: str,
-) -> tuple[M3_SerialManipulatorSimulatorFriendly, dict, dict]:
+def get_information_from_file(file_contents: str) -> (M3_SerialManipulatorSimulatorFriendly, tuple[DQ, float], tuple[DQ, float]):
     """
     The actuation types must be a list of strings. Currently, only 'RX' is accepted.
     The offsets must be a list of DQ objects. They will be normalized.
@@ -113,8 +108,8 @@ def example_plot(q, robot, rcm1, rcm2):
     ax.set_zlabel('$z$')
 
     dqp.plot(robot, q=q)
-    dqp.plot(rcm1["position"], sphere=True, radius=rcm1["radius"], color="red", alpha=0.5)
-    dqp.plot(rcm2["position"], sphere=True, radius=rcm2["radius"], color="blue", alpha=0.5)
+    dqp.plot(rcm1["position"], sphere=True, radius=rcm1["diameter"], color="red", alpha=0.5)
+    dqp.plot(rcm2["position"], sphere=True, radius=rcm2["diameter"], color="blue", alpha=0.5)
 
     plt.show(block=True)
 
@@ -129,8 +124,8 @@ def main():
             damping=0.01,
             alpha=0.999,
             rcm_constraints=[
-                (lrcm1["position"], lrcm1["radius"], 6),
-                (lrcm2["position"], lrcm2["radius"], 6)]
+                (lrcm1["position"], lrcm1["radius"]),
+                (lrcm2["position"], lrcm2["radius"])]
         )
 
         q_init = [0, 0, 0, 0, 0, 0, 0, 0, 0]
