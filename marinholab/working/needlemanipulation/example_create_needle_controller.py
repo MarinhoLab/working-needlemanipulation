@@ -1,6 +1,11 @@
 """
 Copyright (C) 2025 Murilo Marques Marinho (www.murilomarinho.info)
 LGPLv3 License
+
+Example: build a :class:`NeedleController` from the bundled
+``left_robot.yaml`` model. This is the minimal construction path used by the
+needle insertion examples; the vessels, normals and needle pose are
+illustrative placeholder values.
 """
 from importlib.resources import files
 from dqrobotics import *
@@ -8,7 +13,16 @@ from dqrobotics import *
 from marinholab.working.needlemanipulation import NeedleController
 from marinholab.working.needlemanipulation.example_load_from_file import get_information_from_file
 
-def main():
+
+def main() -> None:
+    """Load the left robot model and build a needle controller for it.
+
+    Loads the robot and RCM constraint data from the packaged
+    ``left_robot.yaml``, applies joint limits (expressed in radians), and
+    constructs a :class:`NeedleController` with two RCM constraints at
+    joint index 6, an illustrative needle pose, and two vessel
+    point/normal pairs.
+    """
     lrobot, lrcm1, lrcm2 = get_information_from_file(
         files('marinholab.working.needlemanipulation').joinpath('left_robot.yaml').read_text())
 

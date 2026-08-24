@@ -1,6 +1,10 @@
 """
 Copyright (C) 2025 Murilo Marques Marinho (www.murilomarinho.info)
 LGPLv3 License
+
+Example: build a simple 3-DOF serial manipulator with
+:class:`M3_SerialManipulatorSimulatorFriendly` and, when
+``dqrobotics_extensions`` and ``matplotlib`` are available, plot it in 3D.
 """
 from dqrobotics import *
 from marinholab.working.needlemanipulation import M3_SerialManipulatorSimulatorFriendly
@@ -11,7 +15,16 @@ try:
 except ImportError:
     dqp = None
 
-def main():
+
+def main() -> None:
+    """Build a 3-DOF robot and (optionally) plot it.
+
+    The three joints have offsets that rotate about the X, Y, Z axes with a
+    0.5 m translation along each axis before actuation.
+
+    When the plotting backend is importable the robot is drawn at the home
+    configuration and the figure blocks until closed.
+    """
     offsets_before = [
         1 + 0.5*E_*i_,
         1 + 0.5*E_*j_,

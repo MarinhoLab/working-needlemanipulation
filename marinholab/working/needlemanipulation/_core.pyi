@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 
@@ -46,7 +46,10 @@ class M3_SerialManipulatorSimulatorFriendly(DQ_SerialManipulator):
     Inherits from ``DQ_SerialManipulator`` and overrides the kinematic methods.
     """
 
-    ActuationType = ActuationType
+    # ``ActuationType`` is a pybind11 enum registered as a nested attribute of
+    # the class; expose it so ``M3_...ActuationType.RX`` resolves to an
+    # ``ActuationType`` instance.
+    ActuationType: ClassVar[type["ActuationType"]]
 
     def __init__(
         self,

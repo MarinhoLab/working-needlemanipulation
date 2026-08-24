@@ -1,6 +1,15 @@
 /**
-(C) Copyright 2025 Murilo Marinho (murilomarinho@ieee.org)
-*/
+ * @file M3_SerialManipulatorSimulatorFriendly.cpp
+ * @brief Implementation of M3_SerialManipulatorSimulatorFriendly.
+ *
+ * (C) Copyright 2025 Murilo Marinho (murilomarinho@ieee.org)
+ *
+ * The implementation follows the standard dual-quaternion serial-manipulator
+ * construction: each joint contributes
+ * @c offset_before_(i) * actuation(q_i) * offset_after_(i), and the pose
+ * Jacobian columns are built from the joint axis transformed by the
+ * intermediate poses (see @ref DQ_SerialManipulator in dqrobotics-cpp).
+ */
 
 #include <M3_SerialManipulatorSimulatorFriendly.h>
 
@@ -23,6 +32,10 @@ M3_SerialManipulatorSimulatorFriendly::M3_SerialManipulatorSimulatorFriendly(con
 
 DQ M3_SerialManipulatorSimulatorFriendly::_joint_transformation(const double &q, const int &ith) const
 {
+    // Returns the dual-quaternion joint transformation
+    //   offset_before_(ith) * actuation(q) * offset_after_(ith)
+    // where actuation(q) is the dual quaternion corresponding to the
+    // joint's actuation type at value q.
     const auto& before = offset_before_.at(ith);
     const auto& after = offset_after_.at(ith);
 
@@ -54,6 +67,17 @@ DQ M3_SerialManipulatorSimulatorFriendly::_joint_transformation(const double &q,
 }
 
 
+/**
+ * @brief Returns the spatial axis (as a dual quaternion) of the joint.
+ *
+ * For a revolute joint this is the unit quaternion of the rotation axis;
+ * for a prismatic joint it is the dual quaternion of the translation
+ * direction (i.e. @c E_*axis).
+ *
+ * @param ith Joint index.
+ * @return The dual quaternion representing the joint axis.
+ * @throws std::runtime_error if the joint's actuation type is invalid.
+ */
 DQ M3_SerialManipulatorSimulatorFriendly::_get_w(const int &ith) const
 {
     switch(actuation_types_.at(ith))
