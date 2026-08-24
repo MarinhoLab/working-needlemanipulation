@@ -110,6 +110,7 @@ class PediatricSimulator:
         pass
 
     def connect(self, addr, port=23815):
+        addr = '10.198.113.142'
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s.connect((addr, port))
         pass
