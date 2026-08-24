@@ -1,8 +1,12 @@
 """
 Copyright (C) 2020-25 Murilo Marques Marinho (www.murilomarinho.info)
 LGPLv3 License
+
+Task-space controller with remote-centre-of-motion (RCM) and joint-limit
+constraints, implemented as a quadratic program over joint velocities.
 """
 import math
+from typing import Optional, Sequence, Tuple
 
 from dqrobotics.robot_modeling import DQ_Kinematics, DQ_SerialManipulator
 from dqrobotics.utils import DQ_Geometry
@@ -27,9 +31,9 @@ class ICRA19TaskSpaceController:
                  gain: float,
                  damping: float,
                  alpha: float,
-                 rcm_constraints: list[tuple[DQ, float, int]],
+                 rcm_constraints: Sequence[Tuple[DQ, float, int]],
                  vfi_gain: float = 2.0,
-                 **kwargs):
+                 **kwargs) -> None:
         """
         Initialize the controller.
         :param kinematics: A suitable DQ_SerialManipulator object.
@@ -38,6 +42,9 @@ class ICRA19TaskSpaceController:
         :param alpha: A float between 0 and 1. Soft priority between translation and rotation.
         :param rcm_constraints: A list of tuples (p, r, ith), where p is the position of the constraint as a pure quaternion
         r is the radius of the constraint, and ith is the index of the joint this constraint relates to.
+        :param vfi_gain: Violation Field Indicator gain applied to the RCM constraints.
+        :param kwargs: Optional keyword arguments. Recognized keys: ``verbose``
+            (bool) — print constraint errors at every control step.
         """
 
         self.qp_solver = DQ_QuadprogSolver()
@@ -45,17 +52,18 @@ class ICRA19TaskSpaceController:
         self.gain: float = gain
         self.damping: float = damping
         self.alpha: float = alpha
-        self.rcm_constraints: list[tuple[DQ, float, int]] = rcm_constraints
+        self.rcm_constraints: Sequence[Tuple[DQ, float, int]] = rcm_constraints
         self.vfi_gain: float = vfi_gain
 
         if "verbose" in kwargs:
-            self.verbose = kwargs["verbose"]
+            self.verbose: bool = bool(kwargs["verbose"])
         else:
             self.verbose = False
 
-        self.last_x: np.array = None
-        self.last_Jx: np.array = None
-        self.last_error: np.array = None
+        # Pose / Jacobian / task error of the last control step.
+        self.last_x: Optional[DQ] = None
+        self.last_Jx: Optional[np.ndarray] = None
+        self.last_error: Optional[np.ndarray] = None
 
     def get_last_robot_pose(self) -> DQ:
         """
@@ -66,20 +74,26 @@ class ICRA19TaskSpaceController:
         :return: The last recorded x-axis position of the robot.
         :rtype: DQ
         """
+        assert self.last_x is not None, "No control step has been computed yet."
         return self.last_x
 
-    def get_last_error(self) -> np.array:
+    def get_last_error(self) -> Optional[np.ndarray]:
+        """Return the task error of the last control step, if any.
+
+        :return: The stacked translation/rotation error vector of the last
+            control step, or ``None`` before the first step.
+        """
         return self.last_error
 
 
     @staticmethod
-    def get_rcm_constraint(Jx: np.array,
+    def get_rcm_constraint(Jx: np.ndarray,
                            x: DQ,
                            primitive: DQ,
                            p: DQ,
                            d_safe: float,
                            eta_d: float,
-                           ) -> (np.array, np.array):
+                           ) -> Tuple[np.ndarray, np.ndarray]:
         """
         This static method computes the Remote Centre of Motion (RCM) constraint
         for the end-effector represented by x and its Jacobian Jx. It calculates the
@@ -125,7 +139,28 @@ class ICRA19TaskSpaceController:
 
         return W, w
 
-    def _get_optimization_parameters(self, q, xd):
+    def _get_optimization_parameters(
+        self,
+        q: np.ndarray,
+        xd: DQ,
+    ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
+        """Assemble the QP cost (``H``, ``f``) and inequality constraints (``W``, ``w``).
+
+        Computes the soft-priority blend of the translation and rotation
+        task-space costs plus the damping term, and stacks the joint-limit
+        and (if any) RCM inequality constraints. Also records the end
+        effector pose, its pose Jacobian, and the task error for later use.
+
+        Args:
+            q: Current joint configuration vector.
+            xd: Desired end-effector pose (a unit dual quaternion).
+
+        Returns:
+            A 4-tuple ``(H, f, W, w)`` where ``H`` and ``f`` are the QP cost
+            matrix and linear term, and ``W``/``w`` are the stacked
+            inequality matrix and right-hand side (``None`` when only the
+            always-present joint-limit rows exist, i.e. ``W == W_jl``).
+        """
         DOF = len(q)
 
         # Get current pose information
@@ -172,11 +207,9 @@ class ICRA19TaskSpaceController:
         w_jl = np.hstack((-1.0 * (lower_joint_limits - q), 1.0 * (upper_joint_limits - q)))
 
         # RCM constraints
-        W = W_jl
-        w = w_jl
-
-        if self.verbose:
-            constraint_counter = 0
+        W: Optional[np.ndarray] = W_jl
+        w: Optional[np.ndarray] = w_jl
+        constraint_counter = 0
 
         if self.rcm_constraints is not None:
             for constraint in self.rcm_constraints:
@@ -207,13 +240,22 @@ class ICRA19TaskSpaceController:
 
         return H, f, W, w
 
-    def compute_setpoint_control_signal(self, q, xd) -> np.array:
-        """
-        Get the control signal for the next step as the result of the constrained optimization.
-        Joint limits are currently not considered.
-        :param q: The current joint positions.
-        :param xd: The desired pose.
-        :return: The desired joint positions that should be sent to the robot.
+    def compute_setpoint_control_signal(self, q: np.ndarray, xd: DQ) -> np.ndarray:
+        """Compute the control signal for the next step.
+
+        Solves the constrained quadratic program built by
+        :meth:`_get_optimization_parameters` for the joint velocity that
+        drives the end effector toward the desired pose.
+
+        Args:
+            q: The current joint positions (vector of size ``DOF``).
+            xd: The desired end-effector pose (a unit dual quaternion).
+
+        Returns:
+            The joint-velocity vector ``u`` to be applied for this step.
+
+        Raises:
+            Exception: If ``xd`` is not a unit dual quaternion.
         """
         DOF = len(q)
         if not is_unit(xd):
@@ -223,7 +265,7 @@ class ICRA19TaskSpaceController:
         H, f, W, w = self._get_optimization_parameters(q, xd)
 
         # Solve the quadratic program
-        if W is not None:
+        if W is not None and w is not None:
             u = self.qp_solver.solve_quadratic_program(H, f, W, np.squeeze(w), None, None)
         else:
             W = np.zeros((DOF, DOF))
@@ -233,7 +275,20 @@ class ICRA19TaskSpaceController:
         return u
 
     @staticmethod
-    def _get_rotation_error(x, xd):
+    def _get_rotation_error(x: DQ, xd: DQ) -> np.ndarray:
+        """Return the 4-component rotation error between two poses.
+
+        Uses the dual-quaternion invariant ``conj(r_x) * r_xd``: the error
+        that is closer to the identity (i.e. whose dual part is smaller in
+        norm) is selected, avoiding the 180° ambiguity.
+
+        Args:
+            x: Current end-effector pose.
+            xd: Desired end-effector pose.
+
+        Returns:
+            The 4-component rotation error vector.
+        """
         # Calculate error from invariant
         error_1 = vec4(conj(rotation(x))*rotation(xd) - 1)
         error_2 = vec4(conj(rotation(x))*rotation(xd) + 1)

@@ -1,6 +1,11 @@
 """
 Copyright (C) 2025 Murilo Marques Marinho (www.murilomarinho.info)
 LGPLv3 License
+
+Example: load the 9-DOF "left robot" model and RCM constraint spheres from
+the bundled ``left_robot.yaml``, then run the
+:class:`ICRA19TaskSpaceController` on it for a short trajectory and save an
+MP4 animation (when the plotting backend is available).
 """
 from importlib.resources import files
 import yaml
@@ -15,7 +20,9 @@ try:
 except ImportError:
     dqp = None
 
-def _set_plot_labels():
+
+def _set_plot_labels() -> None:
+    """Set x/y/z axis labels on the current 3D axes."""
     ax = plt.gca()
     ax.set(
         xlabel='x [m]',
@@ -23,7 +30,14 @@ def _set_plot_labels():
         zlabel='z [m]'
     )
 
-def _set_plot_limits(lmin: float = -0.5, lmax: float = 0.5):
+
+def _set_plot_limits(lmin: float = -0.5, lmax: float = 0.5) -> None:
+    """Set x/y/z axis limits on the current 3D axes.
+
+    Args:
+        lmin: Lower limit applied to all three axes (default ``-0.5``).
+        lmax: Upper limit applied to all three axes (default ``0.5``).
+    """
     ax = plt.gca()
     ax.set(
         xlim=[lmin, lmax],
@@ -31,13 +45,33 @@ def _set_plot_limits(lmin: float = -0.5, lmax: float = 0.5):
         zlim=[lmin, lmax]
     )
 
-def get_information_from_file(file_contents: str) -> (M3_SerialManipulatorSimulatorFriendly, tuple[DQ, float], tuple[DQ, float]):
-    """
-    The actuation types must be a list of strings. Currently, only 'RX' is accepted.
-    The offsets must be a list of DQ objects. They will be normalized.
 
-    :param file_contents: The file after .read() was applied in a suitable format.
-    :return: A M3_SerialManipulatorSimulatorFriendly object.
+def get_information_from_file(
+    file_contents: str,
+) -> tuple[
+    M3_SerialManipulatorSimulatorFriendly,
+    dict[str, DQ | float],
+    dict[str, DQ | float],
+]:
+    """Parse the robot YAML definition and build the corresponding objects.
+
+    The YAML file is expected to contain, at minimum, the keys
+    ``actuation_types``, ``offsets_before``, ``offsets_after``, ``rcm1`` and
+    ``rcm2``. Each RCM entry is a 2-element list: ``[position_DQ, radius]``.
+
+    Args:
+        file_contents: The text content of the YAML file (the result of
+            ``Path.read_text()`` or similar).
+
+    Returns:
+        A 3-tuple ``(robot, rcm1, rcm2)`` where ``robot`` is the
+        :class:`M3_SerialManipulatorSimulatorFriendly` model and ``rcm1`` /
+        ``rcm2`` are dictionaries with keys ``"position"`` (a pure
+        :class:`dqrobotics.DQ`) and ``"radius"`` (a float).
+
+    Raises:
+        RuntimeError: If an unsupported actuation type (anything other than
+            ``"RX"``) appears in the YAML.
     """
     data_loaded = yaml.safe_load(file_contents)
 
@@ -69,7 +103,12 @@ def get_information_from_file(file_contents: str) -> (M3_SerialManipulatorSimula
 
 
 # Animation function
-def animate_robot(n, robot, stored_qs, stored_time):
+def animate_robot(
+    n: int,
+    robot: M3_SerialManipulatorSimulatorFriendly,
+    stored_qs: list,
+    stored_time: list,
+) -> None:
     """
     Create an animation function compatible with `plt`.
     Adapted from https://marinholab.github.io/OpenExecutableBooksRobotics//lesson-dq8-optimization-based-robot-control.
@@ -88,7 +127,12 @@ def animate_robot(n, robot, stored_qs, stored_time):
              cylinder_color="c",
              cylinder_alpha=0.3)
 
-def example_plot(q, robot, rcm1, rcm2):
+def example_plot(
+    q: list,
+    robot: M3_SerialManipulatorSimulatorFriendly,
+    rcm1: dict[str, DQ | float],
+    rcm2: dict[str, DQ | float],
+) -> None:
     """
     Plots a 3D representation of a robot's configuration along with two red and blue spherical
     regions of constraint.
@@ -113,7 +157,19 @@ def example_plot(q, robot, rcm1, rcm2):
 
     plt.show(block=True)
 
-def main():
+def main() -> None:
+    """Run the end-to-end example.
+
+    Loads the bundled ``left_robot.yaml`` via
+    :func:`get_information_from_file`, constructs an
+    :class:`ICRA19TaskSpaceController` with the two RCM constraints from the
+    YAML, steps the controller forward for ``time_final`` seconds at
+    ``sampling_time`` resolution, and — when the plotting backend is
+    available — records the resulting trajectory as an MP4 animation.
+
+    Any ``KeyboardInterrupt`` is swallowed so the plot window can be closed
+    gracefully.
+    """
 
     try:
         lrobot, lrcm1, lrcm2 = get_information_from_file(files('marinholab.working.needlemanipulation').joinpath('left_robot.yaml').read_text())

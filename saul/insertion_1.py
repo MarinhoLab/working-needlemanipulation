@@ -1,3 +1,23 @@
+"""
+Saul's pediatric insertion scenario, driven live against a running
+PedriatricSimulator over TCP (``127.0.0.1``).
+
+The script:
+
+1. Builds left and right :class:`M3_SerialManipulatorSimulatorFriendly`
+   models from the simulator's joint transforms.
+2. Configures the joint limits (rad) and RCM constraint spheres for both.
+3. Constructs a :class:`NeedleController` for the right robot with the
+   insertion constraints enabled, using a vessel point and normal derived
+   from the simulator.
+4. Runs the closed-loop for a fixed number of outer loops (200) with 10
+   inner QP steps each, streaming the needle pose to the simulator.
+5. Finally performs a 300-step pure kinematic insertion sweep and
+   disconnects.
+
+Requires ``PedriatricSimulator`` on ``PYTHONPATH`` and a running simulator
+instance.
+"""
 import math
 import os
 
@@ -36,6 +56,22 @@ print("needle radius {}".format(sim.get_needle_radius()))
 
 
 def make_robot(base_frame, transforms):
+    """Build a :class:`M3_SerialManipulatorSimulatorFriendly` model.
+
+    The first joint is anchored to ``base_frame``; all subsequent joints
+    are anchored to the identity and all joints are treated as
+    :attr:`ActuationType.RX`.
+
+    Args:
+        base_frame: Base-frame dual quaternion of the robot.
+        transforms: Sequence of per-joint dual-quaternion transforms as
+            returned by the simulator (``get_left_robot_model_ith`` /
+            ``get_right_robot_model_ith``).
+
+    Returns:
+        A :class:`M3_SerialManipulatorSimulatorFriendly` instance with
+        ``len(transforms)`` DOF.
+    """
     n = len(transforms)
     offsets_before = [base_frame]
     offsets_after = transforms

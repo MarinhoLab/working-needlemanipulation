@@ -3,6 +3,19 @@ Copyright (C) 2025 Murilo Marques Marinho
 (www.murilomarinho.info)
 
 LGPLv3 License
+
+Needle manipulation constraint implementation.
+
+This module implements the Violation Field Indicator (VFI) constraint
+machinery used by :class:`NeedleController`. It computes, for a needle pose
+relative to one or more vessel primitives, the inequality matrix ``W``
+(:func:`needle_jacobian`) and the right-hand-side vector ``w``
+(:func:`needle_w`) that bound the joint velocities in the quadratic program
+solved at each control step.
+
+When ``insertion_constraints`` is enabled an additional angular insertion
+constraint (the needle must approach the vessel within a depth-dependent
+angle band) and a tip point-to-line insertion constraint are appended.
 """
 
 import math
@@ -228,11 +241,44 @@ def needle_jacobian(
     Jx_needle: np.ndarray,
     x_needle: DQ,
     ps_vessel: list[DQ],
-    ns_vessel: list[DQ],
+    ns_vessel: list[DQ] | None,
     insertion_constraints: bool = False,
     needle_offset: DQ = DQ([1.0]),
 ) -> np.ndarray:
-    """Construct the needle constraint matrix."""
+    """Construct the needle inequality constraint matrix ``W``.
+
+    Builds one row of ``W`` (in the ``W @ q_dot <= w`` formulation) per
+    constraint enforced on the needle, where the needle pose is the end
+    effector pose transformed by the (fixed) relative needle pose. The
+    returned matrix has shape ``(n_constraints, DOF)``.
+
+    Per vessel in ``ps_vessel`` a point-to-point radius constraint (inside/
+    outside the needle radius band) and a plane constraint (the needle's own
+    plane vs. the vessel point) are added. When ``ns_vessel`` is provided, an
+    orientation constraint (needle axis vs. the vessel normal) is added for
+    every vessel normal — except, when ``insertion_constraints`` is set, the
+    first normal is instead handled by the depth-dependent angular insertion
+    constraint below.
+
+    Args:
+        Jx_needle: Pose Jacobian of the needle frame, ``8 x DOF``.
+        x_needle: Dual-quaternion pose of the needle frame.
+        ps_vessel: Vessel positions as pure dual quaternions.
+        ns_vessel: Vessel normals as pure dual quaternions, or ``None`` to
+            skip orientation constraints.
+        insertion_constraints: If ``True`` append the insertion point-to-line
+            and angular (phi_z) constraints for the first vessel.
+        needle_offset: Dual quaternion relating the needle tip to the needle
+            frame (defaults to the identity).
+
+    Returns:
+        The stacked constraint Jacobian ``W``, shape ``(n_constraints, DOF)``
+        (``(0, DOF)`` when no constraints are active).
+
+    Raises:
+        ValueError: If ``insertion_constraints`` is ``True`` but
+            ``ps_vessel`` or ``ns_vessel`` is empty.
+    """
     p_needle = translation(x_needle)
     r_needle = rotation(x_needle)
 
@@ -351,7 +397,7 @@ def needle_jacobian(
 def needle_w(
     x_needle: DQ,
     ps_vessel: list[DQ],
-    ns_vessel: list[DQ],
+    ns_vessel: list[DQ] | None,
     needle_radius: float,
     vfi_gain_planes: float,
     vfi_gain_radius: float,
@@ -363,7 +409,38 @@ def needle_w(
     insertion_constraints: bool = False,
     needle_offset: DQ = DQ([1.0]),
 ) -> np.ndarray:
-    """Construct the needle constraint vector."""
+    """Construct the needle inequality constraint right-hand side ``w``.
+
+    Mirrors :func:`needle_jacobian` row-for-row: for each constraint row in
+    ``W`` this returns the corresponding signed margin in ``w``, so that the
+    QP enforces ``W @ q_dot <= w``. All rows are scaled by their VFI gain.
+
+    Args:
+        x_needle: Dual-quaternion pose of the needle frame.
+        ps_vessel: Vessel positions as pure dual quaternions.
+        ns_vessel: Vessel normals as pure dual quaternions, or ``None`` to
+            skip orientation constraints.
+        needle_radius: Physical needle radius (m).
+        vfi_gain_planes: VFI gain for plane-distance constraints.
+        vfi_gain_radius: VFI gain for radius constraints.
+        vfi_gain_angles: VFI gain for orientation (dot-product) constraints.
+        d_safe_planes: Safe plane-distance margin (m).
+        d_safe_radius: Safe radius margin (m).
+        d_safe_angles: Safe orientation margin (rad).
+        verbose: If ``True`` print the per-constraint margins and violations.
+        insertion_constraints: If ``True`` append the insertion point-to-line
+            and angular (phi_z) constraint rows for the first vessel.
+        needle_offset: Dual quaternion relating the needle tip to the needle
+            frame (defaults to the identity).
+
+    Returns:
+        The constraint right-hand-side vector ``w``, shape
+        ``(n_constraints, 1)`` (``(0, 1)`` when no constraints are active).
+
+    Raises:
+        ValueError: If ``insertion_constraints`` is ``True`` but
+            ``ps_vessel`` or ``ns_vessel`` is empty.
+    """
     p_needle = translation(x_needle)
     r_needle = rotation(x_needle)
     w_needle = None

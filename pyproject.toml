@@ -52,5 +52,10 @@ include = ["marinholab"]
 exclude = [
     "**/example*.py",
 ]
+# `dqrobotics` is an untyped compiled package (no `py.typed`, no shipped
+# stubs). `stubs/dqrobotics/` declares the closed set of symbols this
+# project imports so pyright can fully check the codebase. If `dqrobotics`
+# ever ships type information, delete `stubs/` and this `stubPath` entry.
+stubPath = "stubs"
 venvPath = "."
 venv = ""
