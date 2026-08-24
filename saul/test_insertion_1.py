@@ -115,6 +115,17 @@ needle_controller = NeedleController(
         verbose=False
     )
 
+print(f"rrcm1_position = {rrcm1['position']}")
+print(f"rrcm1_radius = {rrcm1['radius']}")
+print(f"rrcm1_joint_index = {rcm1_joint_index}")
+print(f"rrcm2_position = {rrcm2['position']}")
+print(f"rrcm2_radius = {rrcm2['radius']}")
+print(f"rrcm2_joint_index = {rcm2_joint_index}")
+print(f"relative_needle_pose = {relative_needle_pose}")
+print(f"vessel_positions = {[dq.translation(p1)]}")
+print(f"vessel_normals = {[dq.rotation(p1)]}")
+print(f"needle_radius = {radius}")
+
 q = sim.get_right_robot_joints()
 for i in range(1000):
     print(i)
