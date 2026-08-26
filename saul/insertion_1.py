@@ -27,7 +27,7 @@ from importlib.resources import files
 import dqrobotics as dq
 from dqrobotics.utils.DQ_Math import deg2rad
 import numpy as np
-from dqrobotics import rotation
+from dqrobotics import conj, E_, translation
 
 import PedriatricSimulator
 import time
@@ -125,7 +125,6 @@ radius = sim.get_needle_radius()
 needle_tip_pose = sim.get_needle_frame_at(0.0)
 relative_needle_tip_pose = dq.conj(ee) * needle_tip_pose
 
-
 rrobot.set_effector(relative_needle_tip_pose)
 
 v = dq.j_
@@ -136,24 +135,25 @@ needle_controller = NeedleController(
         kinematics=rrobot,
         gain=200.0,
         damping=np.diag([1,1,1,1,1,1,0,0,0]),
-        alpha=0.9999,
+        alpha=1.0,
         rcm_constraints=[
             (rrcm1["position"], rrcm1["radius"], rcm1_joint_index),
             (rrcm2["position"], rrcm2["radius"], rcm2_joint_index)],
         relative_needle_pose=relative_needle_pose,
         #vessel_positions=[dq.translation(p1), dq.translation(p2)],
         #vessel_normals=[n1, n2],
-        vessel_positions=[dq.translation(p1)],
-        vessel_normals=[v],
-        needle_radius=radius,
-        d_safe_angles=np.pi / 8.0,
+        vessel_positions=None,
+        vessel_normals=None,
+        needle_radius=None,
+        d_safe_angles=None,
         vfi_gain=1.0,
         verbose=True,
         insertion_constraints=True
     )
 
 q = sim.get_right_robot_joints()
-for i in range(200):
+xdc = None
+for i in range(300):
     print(i)
     sim.set_frame("needle", sim.get_control_needle_pose())
 
@@ -161,8 +161,7 @@ for i in range(200):
     sim.set_frame("x", x)
 
     # controlled target pose
-    dx = 1 + 0.5 * dq.E_ * -0.0001 * dq.j_ # Move downwards
-    xdc = dx * x
+    xdc = p1
     sim.set_frame("xd", xdc)
 
     sampling_time = 0.008
@@ -172,6 +171,7 @@ for i in range(200):
 
         # Update the current joint positions
         q = q + u * sampling_time
+        print(f"Last error norm {np.linalg.norm(needle_controller.get_last_error())}")
 
     sim.set_right_robot_joints(q)
 
@@ -186,24 +186,76 @@ for i in range(200):
 
 sim.clear_frames()
 
-needle_frame = sim.get_control_needle_pose()
-x = sim.get_right_robot_effector()
-x_wrt_needle_frame = dq.conj(needle_frame) * x
+translate = 1 + 0.5 * dq.E_ * dq.j_ * 0.0005
+angle = -math.pi / 2.0
+rotate1 = math.cos(angle / 2.0) + math.sin(angle / 2.0) * (dq.i_ * 1.0 + dq.j_ * 0.0 + dq.k_ * 0.0)
+angle = math.pi / 2.0
+rotate2 = math.cos(angle / 2.0) + math.sin(angle / 2.0) * (dq.i_ * 0.0 + dq.j_ * 0.0 + dq.k_ * 1.0)
+
+p1 = translate * sim.get_right_tube_target_point() * rotate1 * rotate2
+
+eedle_controller = NeedleController(
+        kinematics=rrobot,
+        gain=2000.0,
+        damping=np.diag([1,1,1,1,1,1,0,0,0]),
+        alpha=1.0,
+        rcm_constraints=[
+            (rrcm1["position"], rrcm1["radius"], rcm1_joint_index),
+            (rrcm2["position"], rrcm2["radius"], rcm2_joint_index)],
+        relative_needle_pose=relative_needle_pose,
+        vessel_positions=[translation(p1)],
+        vessel_normals=[v],
+        needle_radius=radius,
+        d_safe_angles=np.pi / 8.0,
+        vfi_gain=1.0,
+        verbose=False,
+        insertion_constraints=False
+    )
+
+q = sim.get_right_robot_joints()
+for i in range(100):
+    sampling_time = 0.008
+    for step in range(10):
+        # Solve the quadratic program
+        u = needle_controller.compute_setpoint_control_signal(q, xdc)
+
+        # Update the current joint positions
+        q = q + u * sampling_time
+        print(f"Last error norm {np.linalg.norm(needle_controller.get_last_error())}")
+
+    sim.set_right_robot_joints(q)
+
+    time.sleep(1.0 / 60.0)
 
 # insert needle
-for i in range(300):
+q = sim.get_right_robot_joints()
+needle_center = rrobot.fkm(q) * conj(relative_needle_pose)
+for i in range(500):
 
     angle = 0.001 * i * math.pi / 2.0
-    rotate = math.cos(angle / 2.0) + math.sin(angle / 2.0) * (dq.i_ * 0.0 + dq.j_ * 0.0 + dq.k_ * 1.0)
+    rotate = math.cos(angle / 2.0) + math.sin(angle / 2.0) * (dq.i_ * 0.0 + dq.j_ * 1.0 + dq.k_ * 0.0)
 
-    translate = 1 + 0.5 * dq.E_ * (dq.i_ * 0.0 + dq.j_ * -0.00001 * i + dq.k_ * 0.0)
+    translate = 1 + 0.5 * dq.E_ * (dq.i_ * 0.0 + dq.j_ * 0.00001 * i + dq.k_ * 0.0)
 
-    xd = translate * needle_frame * rotate * x_wrt_needle_frame
+    if i < 1500:
+        xdc = needle_center * rotate * relative_needle_pose
 
-    sim.set_frame("xd", xd)
-    sim.set_frame("x", sim.get_right_robot_effector())
+    sim.set_frame("xd_new", xdc)
+    sim.set_frame("x", x)
+    sim.set_frame("p1", p1)
+    sim.set_frame("needle_center", needle_center)
+    sim.set_frame("needle_rotate", needle_center * rotate)
 
-    sim.set_right_robot_target_pose(xd)
+    sampling_time = 0.008
+    for step in range(10):
+        # Solve the quadratic program
+        u = needle_controller.compute_setpoint_control_signal(q, xdc)
+
+        # Update the current joint positions
+        q = q + u * sampling_time
+        print(f"Last error norm {np.linalg.norm(needle_controller.get_last_error())}")
+
+    sim.set_right_robot_joints(q)
 
     time.sleep(1/60)
 

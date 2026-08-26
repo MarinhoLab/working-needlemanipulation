@@ -345,7 +345,7 @@ def needle_jacobian(
         line = n_vessel + E_ * cross(p_vessel, n_vessel)
         plane = n_vessel + E_ * dot(p_vessel, n_vessel)
 
-        insertion_angle = math.pi / 4.0
+        insertion_angle = 2.0 * math.pi / 3.0
         phi_min = math.pi / 6.0
         phi_max = math.pi / 2.0
         h_min = 0.0
@@ -546,7 +546,7 @@ def needle_w(
         line = n_vessel + E_ * cross(p_vessel, n_vessel)
         plane = n_vessel + E_ * dot(p_vessel, n_vessel)
 
-        insertion_angle = math.pi / 4.0
+        insertion_angle = 2.0 * math.pi / 3.0
         insertion_vfi_gain = 1.0
         phi_vfi_gain = 1.0
         phi_min = math.pi / 6.0

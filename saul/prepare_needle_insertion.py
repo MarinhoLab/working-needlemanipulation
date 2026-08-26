@@ -118,7 +118,7 @@ x = sim.get_right_robot_effector()
 x_wrt_needle_frame = dq.conj(needle_frame) * x
 
 # remove needle
-for i in range(100):
+for i in range(110):
 
     angle = -0.01 * i * math.pi / 2.0
     rotate = math.cos(angle / 2.0) + math.sin(angle / 2.0) * (dq.i_ * 0.0 + dq.j_ * 0.0 + dq.k_ * 1.0)
