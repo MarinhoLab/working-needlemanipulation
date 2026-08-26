@@ -54,6 +54,9 @@ class ICRA19TaskSpaceController:
         self.alpha: float = alpha
         self.rcm_constraints: Sequence[Tuple[DQ, float, int]] = rcm_constraints
         self.vfi_gain: float = vfi_gain
+        self.er_accumulated: np.ndarray = np.zeros((4,))
+        self.et_accumulated: np.ndarray = np.zeros((4,))
+        self.integral_gain: float = 0.0
 
         if "verbose" in kwargs:
             self.verbose: bool = bool(kwargs["verbose"])
@@ -171,6 +174,9 @@ class ICRA19TaskSpaceController:
         et = vec4(translation(x) - translation(xd))
         er = ICRA19TaskSpaceController._get_rotation_error(x, xd)
 
+        self.et_accumulated = self.et_accumulated + et
+        self.er_accumulated = self.er_accumulated + er
+
         self.last_error = np.vstack((er, et))
 
         # Get the Translation Jacobian and Rotation Jacobian
@@ -184,11 +190,11 @@ class ICRA19TaskSpaceController:
 
         # Translation term
         Ht = Jt.transpose() @ Jt
-        ft = self.gain * Jt.transpose() @ et
+        ft = self.gain * Jt.transpose() @ (et + self.integral_gain * self.et_accumulated)
 
         # Rotation term
         Hr = Nr.transpose() @ Nr
-        fr = self.gain * Nr.transpose() @ er
+        fr = self.gain * Nr.transpose() @ (er + self.integral_gain * self.er_accumulated)
 
         # Damping term
         if isinstance(self.damping, np.ndarray):
