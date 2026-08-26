@@ -24,7 +24,15 @@ import numpy as np
 from dqrobotics import *
 from dqrobotics.robot_modeling import DQ_Kinematics
 from dqrobotics.utils import DQ_Geometry
-from termcolor import cprint
+
+from marinholab.working.needlemanipulation._debug import (
+    Verbose,
+    debug_insertion,
+    debug_orientation,
+    debug_plane,
+    debug_radius,
+    normalize_verbose,
+)
 
 
 def rotation_axis_jacobian(
@@ -405,7 +413,7 @@ def needle_w(
     d_safe_planes: float,
     d_safe_radius: float,
     d_safe_angles: float,
-    verbose: bool,
+    verbose: Verbose,
     insertion_constraints: bool = False,
     needle_offset: DQ = DQ([1.0]),
 ) -> np.ndarray:
@@ -427,7 +435,10 @@ def needle_w(
         d_safe_planes: Safe plane-distance margin (m).
         d_safe_radius: Safe radius margin (m).
         d_safe_angles: Safe orientation margin (rad).
-        verbose: If ``True`` print the per-constraint margins and violations.
+        verbose: Debug-output setting. ``True`` prints the per-constraint
+            margins and violations, ``False`` prints nothing, and a dict
+            selects individual categories by name (``"radius"``,
+            ``"plane"``, ``"orientation"``, ``"insertion"``).
         insertion_constraints: If ``True`` append the insertion point-to-line
             and angular (phi_z) constraint rows for the first vessel.
         needle_offset: Dual quaternion relating the needle tip to the needle
@@ -443,9 +454,10 @@ def needle_w(
     """
     p_needle = translation(x_needle)
     r_needle = rotation(x_needle)
+    verbose = normalize_verbose(verbose)
     w_needle = None
 
-    for p_vessel in ps_vessel:
+    for vessel_index, p_vessel in enumerate(ps_vessel):
         current_radius_squared = float(
             DQ_Geometry.point_to_point_squared_distance(
                 p_needle,
@@ -487,24 +499,22 @@ def needle_w(
                 current_plane_distance + d_safe_planes
         )
 
-        if verbose:
-            print(f"Upper radius: {math.sqrt(max(0,upper_radius_squared))}")
-            if radius_error_one < 0.0:
-                cprint(
-                    f"     Constraint violation: {math.sqrt(-radius_error_one)}",
-                    "red",
-                )
-            print(f"Current radius: {math.sqrt(current_radius_squared)}")
-            if lower_radius_squared >= 0.0:
-                print(f"Lower radius: {math.sqrt(max(0, lower_radius_squared))}")
-            if radius_error_two < 0.0:
-                cprint(
-                    f"     Constraint violation: {math.sqrt(-radius_error_two)}",
-                    "red",
-                )
-            print(f"Upper plane margin: {plane_error_one}")
-            print(f"Current plane distance: {current_plane_distance}")
-            print(f"Lower plane margin: {plane_error_two}")
+        debug_radius(
+            verbose,
+            vessel_index,
+            lower_radius,
+            math.sqrt(current_radius_squared),
+            upper_radius,
+            radius_error_one,
+            radius_error_two,
+        )
+        debug_plane(
+            verbose,
+            vessel_index,
+            current_plane_distance,
+            plane_error_one,
+            plane_error_two,
+        )
 
         w = np.array(
             [
@@ -518,9 +528,9 @@ def needle_w(
         w_needle = np.vstack((w_needle, w)) if w_needle is not None else w
 
     if ns_vessel is not None:
-        for i, n_vessel in enumerate(ns_vessel):
+        for normal_index, n_vessel in enumerate(ns_vessel):
             # Must match the skipped rows in needle_jacobian().
-            if insertion_constraints and i == 0:
+            if insertion_constraints and normal_index == 0:
                 continue
 
             current_dot = float(dot(n_vessel, Ad(r_needle, k_)).q[0])
@@ -529,10 +539,13 @@ def needle_w(
             dot_error_one = max_dot - current_dot
             dot_error_two = current_dot - min_dot
 
-            if verbose:
-                print(f"Upper dot-product margin: {dot_error_one}")
-                print(f"Current dot product: {current_dot}")
-                print(f"Lower dot-product margin: {dot_error_two}")
+            debug_orientation(
+                verbose,
+                normal_index,
+                current_dot,
+                dot_error_one,
+                dot_error_two,
+            )
 
             w = np.array(
                 [
@@ -588,34 +601,32 @@ def needle_w(
             phi_vfi_gain,
         )
 
-        if verbose:
-            current_dot = phi_z(n_vessel, r_needle)
-            safe_dot = dot_product_safe(
-                h, phi_min, phi_max, h_min, h_max
-            )
-            current_angle = math.acos(
-                float(np.clip(current_dot, -1.0, 1.0))
-            )
-            safe_angle = math.acos(
-                float(np.clip(safe_dot, -1.0, 1.0))
-            )
-            h_n = float(
-                np.clip((h - h_min) / (h_max - h_min), 0.0, 1.0)
-            )
+        current_dot = phi_z(n_vessel, r_needle)
+        safe_dot = dot_product_safe(
+            h, phi_min, phi_max, h_min, h_max
+        )
+        current_angle = math.acos(
+            float(np.clip(current_dot, -1.0, 1.0))
+        )
+        safe_angle = math.acos(
+            float(np.clip(safe_dot, -1.0, 1.0))
+        )
+        h_n = float(
+            np.clip((h - h_min) / (h_max - h_min), 0.0, 1.0)
+        )
 
-            print(f"Distance to plane: {h:.6f} m")
-            print(f"Normalized distance: {h_n:.6f}")
-            print(
-                f"Current angle: {math.degrees(current_angle):.2f} degrees"
-            )
-            print(
-                "Maximum permitted angle: "
-                f"{math.degrees(safe_angle):.2f} degrees"
-            )
-            print(f"Current dot product: {current_dot:.6f}")
-            print(f"Required dot product: {safe_dot:.6f}")
-            print(f"Orientation margin: {current_dot - safe_dot:.6f}")
-            print(f"Insertion margin: {w_insertion:.9e}")
+        debug_insertion(
+            verbose,
+            0,
+            h,
+            h_n,
+            math.degrees(current_angle),
+            math.degrees(safe_angle),
+            current_dot,
+            safe_dot,
+            current_dot - safe_dot,
+            w_insertion,
+        )
 
         w = np.array(
             [w_insertion, w_phi],

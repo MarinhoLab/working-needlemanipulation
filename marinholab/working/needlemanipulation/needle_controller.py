@@ -65,7 +65,11 @@ class NeedleController(ICRA19TaskSpaceController):
                 and additionally used to override per-category VFI gains and
                 safety margins. Recognized keys:
 
-                * ``verbose`` (bool) — print margins at every control step.
+                * ``verbose`` (bool or dict) — per-category debug output;
+                  ``True`` prints every category, ``False`` prints nothing,
+                  and a dict selects categories by name (``"radius"``,
+                  ``"plane"``, ``"orientation"``, ``"insertion"``,
+                  ``"rcm"``).
                 * ``vessel_normals`` (list[DQ]) — vessel normals as pure DQs.
                 * ``vfi_gain_planes``, ``vfi_gain_radius``,
                   ``vfi_gain_angles`` (float) — per-category VFI gains.

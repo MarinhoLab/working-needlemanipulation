@@ -5,7 +5,6 @@ LGPLv3 License
 Task-space controller with remote-centre-of-motion (RCM) and joint-limit
 constraints, implemented as a quadratic program over joint velocities.
 """
-import math
 from typing import Optional, Sequence, Tuple
 
 from dqrobotics.robot_modeling import DQ_Kinematics, DQ_SerialManipulator
@@ -14,7 +13,11 @@ from dqrobotics import *
 from dqrobotics.solvers import DQ_QuadprogSolver
 
 import numpy as np
-from termcolor import cprint
+
+from marinholab.working.needlemanipulation._debug import (
+    debug_rcm,
+    normalize_verbose,
+)
 
 
 class ICRA19TaskSpaceController:
@@ -44,7 +47,9 @@ class ICRA19TaskSpaceController:
         r is the radius of the constraint, and ith is the index of the joint this constraint relates to.
         :param vfi_gain: Violation Field Indicator gain applied to the RCM constraints.
         :param kwargs: Optional keyword arguments. Recognized keys: ``verbose``
-            (bool) — print constraint errors at every control step.
+            (bool or dict) — per-category debug output; ``True`` prints
+            every category, ``False`` prints nothing, and a dict selects
+            categories by name (e.g. ``{"rcm": True}``).
         """
 
         self.qp_solver = DQ_QuadprogSolver()
@@ -58,10 +63,7 @@ class ICRA19TaskSpaceController:
         self.et_accumulated: np.ndarray = np.zeros((4,))
         self.integral_gain: float = 0.0
 
-        if "verbose" in kwargs:
-            self.verbose: bool = bool(kwargs["verbose"])
-        else:
-            self.verbose = False
+        self.verbose = normalize_verbose(kwargs.get("verbose", False))
 
         # Pose / Jacobian / task error of the last control step.
         self.last_x: Optional[DQ] = None
@@ -225,11 +227,13 @@ class ICRA19TaskSpaceController:
 
                 W_c_idx, w_c = self.get_rcm_constraint(Jx_idx, x_idx, k_, p, r, self.vfi_gain)
 
-                if self.verbose:
-                    print(f"RCM {constraint_counter} signed error = {w_c[0]}")
-                    if w_c < 0:
-                        cprint(f"     ↑↑↑Constraint violation: {math.sqrt(-w_c[0])}", "red")
-                    constraint_counter += 1
+                debug_rcm(
+                    self.verbose,
+                    constraint_counter,
+                    w_c[0],
+                    self.vfi_gain,
+                )
+                constraint_counter += 1
 
                 # Full matrix and vector
                 W_c = np.zeros((1,DOF))
