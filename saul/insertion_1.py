@@ -194,7 +194,7 @@ rotate2 = math.cos(angle / 2.0) + math.sin(angle / 2.0) * (dq.i_ * 0.0 + dq.j_ *
 
 p1 = translate * sim.get_right_tube_target_point() * rotate1 * rotate2
 
-eedle_controller = NeedleController(
+needle_controller = NeedleController(
         kinematics=rrobot,
         gain=2000.0,
         damping=np.diag([1,1,1,1,1,1,0,0,0]),
@@ -208,7 +208,7 @@ eedle_controller = NeedleController(
         needle_radius=radius,
         d_safe_angles=np.pi / 8.0,
         vfi_gain=1.0,
-        verbose=False,
+        verbose=True,
         insertion_constraints=False
     )
 

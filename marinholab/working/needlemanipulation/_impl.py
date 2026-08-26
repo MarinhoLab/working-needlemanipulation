@@ -448,37 +448,47 @@ def needle_w(
     for p_vessel in ps_vessel:
         current_radius_squared = float(
             DQ_Geometry.point_to_point_squared_distance(
-                p_needle, p_vessel
+                p_needle,
+                p_vessel,
             )
         )
-        needle_radius_squared = needle_radius ** 2
-        radius_safe_delta = d_safe_radius ** 2
+
+        lower_radius = max(
+            0.0,
+            needle_radius - d_safe_radius,
+        )
+        upper_radius = needle_radius + d_safe_radius
+
+        lower_radius_squared = lower_radius ** 2
+        upper_radius_squared = upper_radius ** 2
+
         radius_error_one = (
-            needle_radius_squared
-            + radius_safe_delta
-            - current_radius_squared
+                upper_radius_squared - current_radius_squared
         )
         radius_error_two = (
-            current_radius_squared
-            - needle_radius_squared
-            + radius_safe_delta
+                current_radius_squared - lower_radius_squared
         )
 
         n_needle = r_needle * k_ * conj(r_needle)
         d_needle = dot(p_needle, n_needle)
         pi_needle = n_needle + E_ * d_needle
+
         current_plane_distance = float(
-            DQ_Geometry.point_to_plane_distance(p_vessel, pi_needle)
+            DQ_Geometry.point_to_plane_distance(
+                p_vessel,
+                pi_needle,
+            )
         )
-        plane_error_one = d_safe_planes - current_plane_distance
-        plane_error_two = current_plane_distance + d_safe_planes
+
+        plane_error_one = (
+                d_safe_planes - current_plane_distance
+        )
+        plane_error_two = (
+                current_plane_distance + d_safe_planes
+        )
 
         if verbose:
-            upper_radius = math.sqrt(
-                needle_radius_squared + radius_safe_delta
-            )
-            lower_radius_squared = needle_radius_squared - radius_safe_delta
-            print(f"Upper radius: {upper_radius}")
+            print(f"Upper radius: {math.sqrt(max(0,upper_radius_squared))}")
             if radius_error_one < 0.0:
                 cprint(
                     f"     Constraint violation: {math.sqrt(-radius_error_one)}",
@@ -486,7 +496,7 @@ def needle_w(
                 )
             print(f"Current radius: {math.sqrt(current_radius_squared)}")
             if lower_radius_squared >= 0.0:
-                print(f"Lower radius: {math.sqrt(lower_radius_squared)}")
+                print(f"Lower radius: {math.sqrt(max(0, lower_radius_squared))}")
             if radius_error_two < 0.0:
                 cprint(
                     f"     Constraint violation: {math.sqrt(-radius_error_two)}",
