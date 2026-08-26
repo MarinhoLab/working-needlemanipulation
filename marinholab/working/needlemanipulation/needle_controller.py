@@ -145,40 +145,38 @@ class NeedleController(ICRA19TaskSpaceController):
         Jx_needle = haminus8(self.relative_needle_pose) @ Jx
         x_needle = x * self.relative_needle_pose
 
-        if self.vessel_positions is not None:
+        # VFI-related Jacobian
+        W_needle = needle_jacobian(
+            Jx_needle,
+            x_needle,
+            self.vessel_positions,
+            self.vessel_normals if hasattr(self, "vessel_normals") else None,
+            self.insertion_constraints,
+            needle_offset=conj(self.relative_needle_pose),
+        )
+        # VFI w
+        w_needle = needle_w(
+            x_needle=x_needle,
+            ps_vessel=self.vessel_positions,
+            ns_vessel=self.vessel_normals if hasattr(self, "vessel_normals") else None,
+            needle_radius=self.needle_radius,
+            vfi_gain_planes=self.vfi_gain_planes if hasattr(self, "vfi_gain_planes") else self.vfi_gain,
+            vfi_gain_radius=self.vfi_gain_radius if hasattr(self, "vfi_gain_radius") else self.vfi_gain,
+            vfi_gain_angles=self.vfi_gain_angles if hasattr(self, "vfi_gain_angles") else self.vfi_gain,
+            d_safe_planes=self.d_safe_planes if hasattr(self, "d_safe_planes") else 0.0005,
+            d_safe_radius=self.d_safe_radius if hasattr(self, "d_safe_radius") else 0.0005,
+            d_safe_angles=self.d_safe_angles if hasattr(self, "d_safe_angles") else math.pi / 4,
+            verbose=self.verbose,
+            insertion_constraints=self.insertion_constraints,
+            needle_offset=conj(self.relative_needle_pose),
+        ).reshape((W_needle.shape[0],))
 
-            # VFI-related Jacobian
-            W_needle = needle_jacobian(
-                Jx_needle,
-                x_needle,
-                self.vessel_positions,
-                self.vessel_normals if hasattr(self, "vessel_normals") else None,
-                self.insertion_constraints,
-                needle_offset=conj(self.relative_needle_pose),
-            )
-            # VFI w
-            w_needle = needle_w(
-                x_needle=x_needle,
-                ps_vessel=self.vessel_positions,
-                ns_vessel=self.vessel_normals if hasattr(self, "vessel_normals") else None,
-                needle_radius=self.needle_radius,
-                vfi_gain_planes=self.vfi_gain_planes if hasattr(self, "vfi_gain_planes") else self.vfi_gain,
-                vfi_gain_radius=self.vfi_gain_radius if hasattr(self, "vfi_gain_radius") else self.vfi_gain,
-                vfi_gain_angles=self.vfi_gain_angles if hasattr(self, "vfi_gain_angles") else self.vfi_gain,
-                d_safe_planes=self.d_safe_planes if hasattr(self, "d_safe_planes") else 0.0005,
-                d_safe_radius=self.d_safe_radius if hasattr(self, "d_safe_radius") else 0.0005,
-                d_safe_angles=self.d_safe_angles if hasattr(self, "d_safe_angles") else math.pi / 4,
-                verbose=self.verbose,
-                insertion_constraints=self.insertion_constraints,
-                needle_offset=conj(self.relative_needle_pose),
-            ).reshape((W_needle.shape[0],))
-
-            if W is not None and w is not None:
-                W = np.vstack((W, W_needle))
-                w = np.hstack((w, w_needle))
-            else:
-                W = W_needle
-                w = w_needle
+        if W is not None and w is not None:
+            W = np.vstack((W, W_needle))
+            w = np.hstack((w, w_needle))
+        else:
+            W = W_needle
+            w = w_needle
 
         # ``_get_optimization_parameters`` always returns a non-None ``W``/``w``
         # (at least the joint-limit rows), but its signature types them as
