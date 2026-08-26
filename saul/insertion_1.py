@@ -133,7 +133,7 @@ n1 = dq.Ad(dq.rotation(p1), dq.k_)
 
 needle_controller = NeedleController(
         kinematics=rrobot,
-        gain=200.0,
+        gain=100.0,
         damping=np.diag([1,1,1,1,1,1,0,0,0]),
         alpha=1.0,
         rcm_constraints=[

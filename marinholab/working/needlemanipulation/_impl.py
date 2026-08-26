@@ -554,6 +554,13 @@ def needle_w(
                 ],
                 dtype=np.float64,
             ).reshape(-1, 1)
+
+            if np.any(w < 0.0):
+                cprint(
+                    f"     Constraint violation for dot product: {w}",
+                    "red",
+                )
+
             w_needle = np.vstack((w_needle, w)) if w_needle is not None else w
 
     if insertion_constraints:
