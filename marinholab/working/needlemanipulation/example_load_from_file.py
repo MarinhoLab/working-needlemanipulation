@@ -152,8 +152,8 @@ def example_plot(
     ax.set_zlabel('$z$')
 
     dqp.plot(robot, q=q)
-    dqp.plot(rcm1["position"], sphere=True, radius=rcm1["diameter"], color="red", alpha=0.5)
-    dqp.plot(rcm2["position"], sphere=True, radius=rcm2["diameter"], color="blue", alpha=0.5)
+    dqp.plot(rcm1["position"], sphere=True, radius=rcm1["radius"], color="red", alpha=0.5)
+    dqp.plot(rcm2["position"], sphere=True, radius=rcm2["radius"], color="blue", alpha=0.5)
 
     plt.show(block=True)
 
@@ -174,14 +174,21 @@ def main() -> None:
     try:
         lrobot, lrcm1, lrcm2 = get_information_from_file(files('marinholab.working.needlemanipulation').joinpath('left_robot.yaml').read_text())
 
+        # Apply the robot's joint limits (the same values used by
+        # example_create_needle_controller). The controller's joint-limit
+        # constraints are built from these, so they must be set before the
+        # controller is constructed or the QP is infeasible from the start.
+        lrobot.set_lower_q_limit([-85, -85, 5, -265, -85, -355, -170, -30, -30])
+        lrobot.set_upper_q_limit([85, 85, 120, 0, 85, 355, 170, 30, 30])
+
         controller = ICRA19TaskSpaceController(
             kinematics=lrobot,
             gain=10.0,
             damping=0.01,
             alpha=0.999,
             rcm_constraints=[
-                (lrcm1["position"], lrcm1["radius"]),
-                (lrcm2["position"], lrcm2["radius"])]
+                (lrcm1["position"], lrcm1["radius"], 6),
+                (lrcm2["position"], lrcm2["radius"], 6)]
         )
 
         q_init = [0, 0, 0, 0, 0, 0, 0, 0, 0]

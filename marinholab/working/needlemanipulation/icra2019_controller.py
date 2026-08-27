@@ -237,16 +237,22 @@ class ICRA19TaskSpaceController:
 
                 # Full matrix and vector
                 W_c = np.zeros((1,DOF))
-                w_c = np.zeros(1)
-                # Add the current partial results
+                w_c_full = np.zeros(1)
+                # Add the current partial results. The Jacobian row ``W_c_idx``
+                # is (1, idx+1) (only the first ``idx+1`` joints move the
+                # constrained frame); the RCM margin returned by
+                # ``get_rcm_constraint`` must be carried into the full
+                # right-hand side, otherwise the constraint degrades to
+                # ``J_rcm @ q_dot <= 0`` and loses its safe-radius bound.
                 W_c[0, 0:idx+1] = W_c_idx
+                w_c_full[0] = w_c[0]
 
                 if W is None:
                     W = W_c
-                    w = w_c
+                    w = w_c_full
                 else:
                     W = np.vstack((W, W_c))
-                    w = np.hstack((w, w_c))
+                    w = np.hstack((w, w_c_full))
 
         return H, f, W, w
 

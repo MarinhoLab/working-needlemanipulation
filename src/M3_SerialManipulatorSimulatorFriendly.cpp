@@ -28,6 +28,16 @@ M3_SerialManipulatorSimulatorFriendly::M3_SerialManipulatorSimulatorFriendly(con
         offset_after_.size() != actuation_types_.size() )
         throw std::runtime_error("Size issue");
 
+    // The base class only resizes the limit vectors, leaving them
+    // uninitialized. Initialize them to a wide range so that
+    // get_lower_q_limit()/get_upper_q_limit() never return garbage and the
+    // joint-limit constraints stay feasible until the caller sets real
+    // limits with set_lower_q_limit()/set_upper_q_limit().
+    // ``kDefaultJointLimit`` is a large (practically unbounded) value in
+    // radians, the unit used for joint positions throughout dqrobotics.
+    static constexpr double kDefaultJointLimit = 10.0;
+    lower_q_limit_ = VectorXd::Constant(actuation_types_.size(), -kDefaultJointLimit);
+    upper_q_limit_ = VectorXd::Constant(actuation_types_.size(), kDefaultJointLimit);
 }
 
 DQ M3_SerialManipulatorSimulatorFriendly::_joint_transformation(const double &q, const int &ith) const
