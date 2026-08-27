@@ -1,6 +1,6 @@
 """
 Copyright (C) 2025 Murilo Marques Marinho (www.murilomarinho.info)
-LGPLv3 License
+MIT License
 
 Needle manipulation controller. Extends
 :class:`ICRA19TaskSpaceController` with VFI constraints that keep the needle

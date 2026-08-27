@@ -1,6 +1,6 @@
 """
 Copyright (C) 2025 Murilo Marques Marinho (www.murilomarinho.info)
-LGPLv3 License
+MIT License
 
 Example: build a :class:`NeedleController` from the bundled
 ``left_robot.yaml`` model. This is the minimal construction path used by the
