@@ -4,13 +4,37 @@ Repository-specific notes for working in `MarinhoLab/working-needlemanipulation`
 
 ## Building the C++ extension (`_core`)
 
-`pip install . --no-build-isolation` requires `cmake`, `ninja` and `g++` on
-`PATH`. In this sandbox the venv's `bin` (e.g. `/tmp/venv-test/bin`) holds
-`cmake`/`ninja` but is not on `PATH`; export it first:
+`_core` is a pybind11 module built by CMake — `setup.py` drives CMake through
+`setuptools`, and `CMakeLists.txt` compiles `src/core.cpp` +
+`src/M3_SerialManipulatorSimulatorFriendly.cpp`.
+
+Building requires:
+
+- `cmake` (≥3.15), `ninja` and `g++` on `PATH`.
+- **Eigen3** — `CMakeLists.txt` runs `find_package(Eigen3 REQUIRED)` and links
+  `Eigen3::Eigen`. Debian/Ubuntu: `sudo apt-get install libeigen3-dev` (the CI
+  build job does this; on Windows it is pulled in via vcpkg).
+- **Initialised git submodules** — `submodules/pybind11` (v3.0) and
+  `submodules/dqrobotics/cpp` are pulled in with `add_subdirectory`. A plain
+  clone has empty submodule dirs, so run:
+
+  ```
+  git submodule update --init --recursive
+  ```
+
+- The **version is taken from git tags** (`setuptools-git-versioning`,
+  `dynamic = ["version"]` in `pyproject.toml`), so an untagged checkout
+  produces a dev version.
+
+Then install with:
 
 ```
-export PATH="/tmp/venv-test/bin:$PATH"
+pip install . --no-build-isolation
 ```
+
+On **aarch64/arm64** builds, `setup.py` appends `-ffp-contract=off` so the
+floating-point results match the reference MATLAB behaviour — do not strip
+that flag.
 
 ## dqrobotics solver classes (important)
 
@@ -27,13 +51,46 @@ function") is available.
 controller raises "pure virtual function" at `DQ_QuadprogSolver()`,
 `quadprog` is missing in the environment.
 
+## Constraint debug output (`_debug` and `verbose`)
+
+All per-constraint debug printing lives in `marinholab/working/needlemanipulation/_debug.py`.
+It centralises the messages with a single grammar: a fixed-width category tag
+(e.g. `[radius    #0]`) followed by `key=value` fields in a fixed numeric
+format, and red `VIOLATION:` lines for breached constraints.
+
+The available categories are `radius`, `plane`, `orientation`, `insertion` and
+`rcm` (see `CONSTRAINT_CATEGORIES`). The public API accepts a single
+`verbose` kwarg (type `Verbose = bool | dict[str, bool]`):
+
+- `True` — print every category;
+- `False` — print nothing (the default);
+- `{"rcm": True, ...}` — select categories by name.
+
+Both `ICRA19TaskSpaceController` and `NeedleController` accept `verbose=` and
+normalise it via `normalize_verbose` at the controller boundary, so the
+per-constraint helpers (`debug_radius`, `debug_plane`, `debug_orientation`,
+`debug_insertion`, `debug_rcm`) each gate on their own category. To add a new
+category: extend `CONSTRAINT_CATEGORIES` and add a matching `debug_*` helper.
+Do not reintroduce per-constraint `verbose_*` kwargs — the single `verbose`
+setting is the intended interface.
+
+## Simulation scripts (`saul/`)
+
+`saul/` holds the live end-to-end scripts for the pediatric-simulator
+scenario (e.g. `insertion_1.py`, `needle_driving_*.py`). They are **not** part
+of the installed package and are excluded from the type-checker; they run
+against a live `PedriatricSimulator` process over TCP (`127.0.0.1`) and need
+it on `PYTHONPATH` plus a running instance. Use them as references for how the
+controllers are driven in a closed loop, not as a test suite.
+
 ## Tests
 
 There is **no repository test suite** — `tests/` was removed together with
 the `simulator_tests` merge (the old `conftest.py` mocked `_core` and is no
 longer present). There is also no dedicated CI `test` job; the workflow only
 runs `build` (matrix wheel builds) and `publish`. To smoke-test a change
-locally, build the package in a venv and exercise the controller API:
+locally, build the package (see the build section) and exercise the controller
+API:
 
 ```
 python -c "
@@ -48,6 +105,11 @@ H, f, W, w = c._get_optimization_parameters([0.0]*9, r.fkm([0.0]*9))
 print(W.shape)
 "
 ```
+
+> **Run it from outside the repo root** (e.g. `cd /tmp`). Running it from the
+> repo root makes `import marinholab` resolve to the **source** tree, which
+> does not contain the compiled `_core` extension, so the import fails. Run it
+> from the repo root only after building `_core` in-place.
 
 ## CI build job: do not cache `build/`
 
@@ -78,7 +140,16 @@ stricter than the symbols allow makes `repair` fail the build.
 ## Type checking with pyright (and the `stubs/` package)
 
 The `marinholab` package is checked with **pyright** in `standard` mode
-(`[tool.pyright]` in `pyproject.toml`). It runs clean: `0 errors, 0 warnings`.
+(`[tool.pyright]` in `pyproject.toml`). The invariant is **0 errors**.
+`dqrobotics` ships neither a `py.typed` marker nor `.pyi` stubs (its core is a
+compiled extension), so the repo keeps its own typed stubs under
+`stubs/dqrobotics` and points pyright at them via `stubPath` — type
+information comes from those stubs, not the installed package. If the runtime
+dependencies are not installed, pyright can additionally report
+`reportMissingModuleSource` / `reportMissingImports` for the `dqrobotics`
+imports; those are an environment issue, not a regression. Run the check with
+the dependencies installed (see the build section); any *other* warning or any
+error is a regression to fix.
 
 The package depends on the third-party **`dqrobotics`** library, which is a
 compiled pybind11 extension that ships **no `py.typed` marker and no `.pyi`
