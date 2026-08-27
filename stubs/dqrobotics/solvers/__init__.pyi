@@ -9,7 +9,6 @@ from numpy.typing import NDArray
 
 __all__ = [
     "DQ_QuadraticProgrammingSolver",
-    "DQ_QuadprogSolver",
 ]
 
 
@@ -31,17 +30,3 @@ class DQ_QuadraticProgrammingSolver:
         Aeq: Optional[NDArray[np.float64]],
         beq: Optional[NDArray[np.float64]],
     ) -> NDArray[np.float64]: ...
-
-
-class DQ_QuadprogSolver(DQ_QuadraticProgrammingSolver):
-    """Concrete QP solver backed by the ``quadprog`` package.
-
-    Not instantiated when ``quadprog`` is not installed (the import is
-    guarded by a bare ``try/except`` in ``dqrobotics.solvers``).
-    """
-
-    def __init__(self) -> None: ...
-
-    def set_equality_constraints_tolerance(self, tolerance: float) -> None: ...
-
-    def get_equality_constraints_tolerance(self) -> float: ...

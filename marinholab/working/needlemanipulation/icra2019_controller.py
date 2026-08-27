@@ -10,7 +10,7 @@ from typing import Optional, Sequence, Tuple
 from dqrobotics.robot_modeling import DQ_Kinematics, DQ_SerialManipulator
 from dqrobotics.utils import DQ_Geometry
 from dqrobotics import *
-from dqrobotics.solvers import DQ_QuadprogSolver
+from marinholab.solvers.qpoases import Solver
 
 import numpy as np
 
@@ -52,7 +52,7 @@ class ICRA19TaskSpaceController:
             categories by name (e.g. ``{"rcm": True}``).
         """
 
-        self.qp_solver = DQ_QuadprogSolver()
+        self.qp_solver = Solver()
         self.kinematics: DQ_SerialManipulator = kinematics
         self.gain: float = gain
         self.damping: float = damping
