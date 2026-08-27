@@ -1,6 +1,7 @@
 # Working Project: Needle Manipulation
 
-UoM–UTokyo collaboration, on dual-quaternion (DQ) control for needle
+A University of Manchester (UoM) and University of Tokyo (UTokyo)
+collaboration, on dual-quaternion (DQ) control for needle
 insertion. Built on [DQRobotics](https://github.com/dqrobotics), it provides a
 QP-based task-space controller with remote-centre-of-motion (RCM) and
 joint-limit constraints, extended with violation-field constraints that keep a
