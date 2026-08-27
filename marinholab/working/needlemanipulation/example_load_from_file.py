@@ -1,6 +1,6 @@
 """
 Copyright (C) 2025 Murilo Marques Marinho (www.murilomarinho.info)
-LGPLv3 License
+MIT License
 
 Example: load the 9-DOF "left robot" model and RCM constraint spheres from
 the bundled ``left_robot.yaml``, then run the

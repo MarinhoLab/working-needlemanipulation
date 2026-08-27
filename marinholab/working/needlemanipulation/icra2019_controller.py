@@ -1,6 +1,6 @@
 """
 Copyright (C) 2020-25 Murilo Marques Marinho (www.murilomarinho.info)
-LGPLv3 License
+MIT License
 
 Task-space controller with remote-centre-of-motion (RCM) and joint-limit
 constraints, implemented as a quadratic program over joint velocities.

@@ -1,6 +1,6 @@
 """
 Copyright (C) 2025 Murilo Marques Marinho (www.murilomarinho.info)
-LGPLv3 License
+MIT License
 
 Example: build a simple 3-DOF serial manipulator with
 :class:`M3_SerialManipulatorSimulatorFriendly` and, when
