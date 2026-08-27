@@ -36,20 +36,17 @@ On **aarch64/arm64** builds, `setup.py` appends `-ffp-contract=off` so the
 floating-point results match the reference MATLAB behaviour — do not strip
 that flag.
 
-## dqrobotics solver classes (important)
+## QP solver (`marinholab-solvers-qpoases`)
 
-`dqrobotics.solvers.DQ_QuadprogSolver` (the concrete solver used by
-`icra2019_controller.py`) is a thin Python wrapper around the `quadprog`
-package, and dqrobotics imports it inside a **bare `try/except: pass`**.
-Without `quadprog` installed, `DQ_QuadprogSolver` silently does not exist and
-only the abstract `DQ_QuadraticProgrammingSolver` (pybind11, "pure virtual
-function") is available.
+The controllers solve the velocity QP with
+`marinholab.solvers.qpoases.Solver` — the **`marinholab-solvers-qpoases`**
+package (a qpOASES wrapper that ships prebuilt binaries). It is a **declared
+runtime dependency** (`pyproject.toml`) and is installed alongside the package.
 
-`quadprog` is a **declared runtime dependency** of this package
-(`pyproject.toml`), and the `build` job in
-`.github/workflows/python-publish.yml` installs it on purpose. If the
-controller raises "pure virtual function" at `DQ_QuadprogSolver()`,
-`quadprog` is missing in the environment.
+`icra2019_controller.py` does `from marinholab.solvers.qpoases import Solver`
+and stores it as `self.qp_solver`. Its
+`solve_quadratic_program(H, f, A, b, Aeq, beq)` accepts `A=None`/`Aeq=None`
+and returns the solution `x`, so the controller call sites are unchanged.
 
 ## Constraint debug output (`_debug` and `verbose`)
 
@@ -166,7 +163,7 @@ stubs/dqrobotics/
     __init__.pyi            # DQ + math helpers (i_, j_, k_, E_, conj, dot, ...)
     robot_modeling/__init__.pyi   # DQ_SerialManipulator, DQ_Kinematics
     utils/__init__.pyi      # DQ_Geometry
-    solvers/__init__.pyi    # DQ_QuadraticProgrammingSolver, DQ_QuadprogSolver
+    solvers/__init__.pyi    # DQ_QuadraticProgrammingSolver
 ```
 
 pyright is pointed at it via `stubPath = "stubs"` in `pyproject.toml`, so it
