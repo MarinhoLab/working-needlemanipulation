@@ -180,6 +180,11 @@ class NeedleController(ICRA19TaskSpaceController):
                 W = W_needle
                 w = w_needle
 
+        # ``_get_optimization_parameters`` always returns a non-None ``W``/``w``
+        # (at least the joint-limit rows), but its signature types them as
+        # ``Optional``; assert the invariant so the ``.dtype`` checks below
+        # narrow correctly.
+        assert W is not None and w is not None
         # print(f"H={H} \n\n f={f} \n\n W={W} \n\n w={np.squeeze(w)} \n\n")
         assert H.dtype == np.float64
         assert f.dtype == np.float64
