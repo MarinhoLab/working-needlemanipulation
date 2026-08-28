@@ -211,7 +211,7 @@ needle_driving_1_controller = NeedleController(
 
 print("Starting needle driving loop...")
 q = sim.get_right_robot_joints()
-p1 = sim.get_right_tube_target_point() * (1 + 0.5 * E_ * j_ * -0.0005)
+p1 = sim.get_right_tube_target_point()
 sim.set_frame("p1", p1)
 needle_center = rrobot.fkm(q) * needle_tip_to_needle_center
 sim.clear_frames()
@@ -230,6 +230,66 @@ for i in range(50):
     sim.set_frame("xd_new", xdc)
     sim.set_frame("x", x)
     sim.set_frame("p1", p1)
+    sim.set_frame("needle_center", needle_center)
+    sim.set_frame("plane_1", needle_center * (1 + 0.5*E_*0.001*k_))
+    sim.set_frame("plane_2", needle_center * (1 + 0.5*E_*-0.001*k_))
+    sim.set_frame("needle_rotate", needle_center * rotate)
+
+    for step in range(CONTROLLER_STEPS):
+        # Solve the quadratic program
+        u = needle_driving_1_controller.compute_setpoint_control_signal(q, xdc)
+
+        # Update the current joint positions
+        q = q + u * CONTROLLER_SAMPLING_TIME
+        print(f"Last error norm {np.linalg.norm(needle_driving_1_controller.get_last_error())}")
+
+    sim.set_right_robot_joints(q)
+
+    time.sleep(1/60)
+print("Needle driving loop finished.")
+
+print("Starting needle driving loop...")
+q = sim.get_right_robot_joints()
+p1 = sim.get_right_tube_target_point()
+p2 = sim.get_left_tube_target_point()
+sim.set_frame("p1", p1)
+sim.set_frame("p2", p2)
+needle_center = rrobot.fkm(q) * needle_tip_to_needle_center
+sim.clear_frames()
+
+needle_driving_1_controller = NeedleController(
+        kinematics=rrobot,
+        gain=100.0,
+        damping=np.diag([1,1,1,1,1,1,0.000001,0.000001,0.000001]),
+        alpha=0.999,
+        rcm_constraints=[
+            (rrcm["position"], rrcm["radius"], rcm_joint_index)],
+        relative_needle_pose=needle_tip_to_needle_center,
+        vessel_positions=[translation(p1), translation(p2)],
+        vessel_normals=[v, v],
+        needle_radius=radius,
+        d_safe_angles=np.pi / 8.0,
+        vfi_gain=1.0,
+        verbose=True,
+        insertion_constraints=False
+    )
+
+for i in range(50):
+
+    angle = 0.001 * i * math.pi / 2.0
+    rotate = math.cos(angle / 2.0) + math.sin(angle / 2.0) * k_
+
+    translate = 1 + 0.5 * E_ * k_ * 0.00001
+
+    if i < 1500:
+        xdc = needle_center * rotate * needle_center_to_needle_tip
+
+    x = rrobot.fkm(q)
+    needle_center = x * needle_tip_to_needle_center
+    sim.set_frame("xd_new", xdc)
+    sim.set_frame("x", x)
+    sim.set_frame("p1", p1)
+    sim.set_frame("p2", p2)
     sim.set_frame("needle_center", needle_center)
     sim.set_frame("plane_1", needle_center * (1 + 0.5*E_*0.001*k_))
     sim.set_frame("plane_2", needle_center * (1 + 0.5*E_*-0.001*k_))

@@ -104,6 +104,10 @@ class NeedleController(ICRA19TaskSpaceController):
             self.vessel_normals: list[DQ] = kwargs["vessel_normals"]
         if "d_safe_angles" in kwargs:
             self.d_safe_angles: float = kwargs["d_safe_angles"]
+        if "failfast" in kwargs:
+            self.failfast: bool = kwargs["failfast"]
+        else:
+            self.failfast = False
 
         self.relative_needle_pose: DQ = relative_needle_pose
         self.vessel_positions: list[DQ] = vessel_positions
@@ -192,7 +196,7 @@ class NeedleController(ICRA19TaskSpaceController):
         assert f.dtype == np.float64
         assert W.dtype == np.float64
         assert np.squeeze(w).dtype == np.float64
-        if np.any(w < -1e-3):
+        if self.failfast and np.any(w < -1e-3):
             where = np.where(w < -1e-3)[0]
             raise RuntimeError(f"ERROR: VFI constraints violated, w={w[where]}, where={where}")
         u = self.qp_solver.solve_quadratic_program(H, f, W, np.squeeze(w), None, None)
