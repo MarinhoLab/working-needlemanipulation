@@ -168,7 +168,7 @@ print("Safety set controller loop finished.")
 needle_positioning_controller = NeedleController(
         kinematics=rrobot,
         gain=100.0,
-        damping=np.diag([1,1,1,1,1,1,0,0,0]),
+        damping=np.diag([1,1,1,1,1,1,0.000001,0.000001,0.000001]),
         alpha=1.0,
         rcm_constraints=[
             (rrcm["position"], rrcm["radius"], rcm_joint_index)],
@@ -211,7 +211,7 @@ print("Needle positioning loop finished.")
 needle_driving_1_controller = NeedleController(
         kinematics=rrobot,
         gain=2000.0,
-        damping=np.diag([1,1,1,1,1,1,0,0,0]),
+        damping=np.diag([1,1,1,1,1,1,0.000001,0.000001,0.000001]),
         alpha=1.0,
         rcm_constraints=[
             (rrcm["position"], rrcm["radius"], rcm_joint_index)],
