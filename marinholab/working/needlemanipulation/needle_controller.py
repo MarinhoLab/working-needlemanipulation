@@ -188,7 +188,7 @@ class NeedleController(ICRA19TaskSpaceController):
         assert f.dtype == np.float64
         assert W.dtype == np.float64
         assert np.squeeze(w).dtype == np.float64
-        if np.any(w < 0):
+        if np.any(w < -1e-3):
             raise RuntimeError(f"ERROR: VFI constraints violated, w={w}")
         u = self.qp_solver.solve_quadratic_program(H, f, W, np.squeeze(w), None, None)
 

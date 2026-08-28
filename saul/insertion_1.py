@@ -123,6 +123,48 @@ v = j_
 n = Ad(rotation(needle_pose), k_)
 n1 = Ad(rotation(p1), k_)
 
+safety_set_controller = NeedleController(
+        kinematics=rrobot,
+        gain=100.0,
+        damping=np.diag([1,1,1,1,1,1,0,0,0]),
+        alpha=1.0,
+        rcm_constraints=[
+            (rrcm["position"], rrcm["radius"], rcm_joint_index)],
+        relative_needle_pose=relative_needle_pose,
+        vessel_positions=None,
+        vessel_normals=None,
+        needle_radius=None,
+        d_safe_angles=None,
+        vfi_gain=1.0,
+        verbose=False
+    )
+
+q = sim.get_right_robot_joints()
+x_now = rrobot.fkm(q)
+xdc = None
+
+print("Starting safety set controller loop...")
+for i in range(200):
+    sim.set_frame("needle", sim.get_control_needle_pose())
+
+    x = rrobot.fkm(q)
+    sim.set_frame("x", x)
+
+    # controlled target pose
+    sim.set_frame("xd", x_now)
+
+    for step in range(CONTROLLER_STEPS):
+        # Solve the quadratic program
+        u = safety_set_controller.compute_setpoint_control_signal(q, x_now)
+
+        # Update the current joint positions
+        q = q + u * CONTROLLER_SAMPLING_TIME
+
+    sim.set_right_robot_joints(q)
+
+    time.sleep(1.0 / 60.0)
+print("Safety set controller loop finished.")
+
 needle_positioning_controller = NeedleController(
         kinematics=rrobot,
         gain=100.0,
@@ -136,7 +178,7 @@ needle_positioning_controller = NeedleController(
         needle_radius=None,
         d_safe_angles=None,
         vfi_gain=1.0,
-        verbose=False,
+        verbose=True,
         insertion_constraints=True
     )
 

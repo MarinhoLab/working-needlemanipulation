@@ -305,86 +305,88 @@ def needle_jacobian(
 
     W_needle = None
 
-    if not insertion_constraints:
-        for p_vessel in ps_vessel:
-            J_radius = np.asarray(
-                DQ_Kinematics.point_to_point_distance_jacobian(
-                    Jt_needle, p_needle, p_vessel
+    if ps_vessel is not None:
+
+        if not insertion_constraints:
+            for p_vessel in ps_vessel:
+                J_radius = np.asarray(
+                    DQ_Kinematics.point_to_point_distance_jacobian(
+                        Jt_needle, p_needle, p_vessel
+                    ),
+                    dtype=np.float64,
+                )
+                J_plane = np.asarray(
+                    DQ_Kinematics.plane_to_point_distance_jacobian(
+                        Jpi_needle, p_vessel
+                    ),
+                    dtype=np.float64,
+                )
+                W = np.vstack((J_radius, -J_radius, J_plane, -J_plane))
+                W_needle = np.vstack((W_needle, W)) if W_needle is not None else W
+
+        if insertion_constraints:
+            if not ps_vessel or not ns_vessel:
+                raise ValueError(
+                    "ps_vessel and ns_vessel must be non-empty when "
+                    "insertion constraints are enabled."
+                )
+
+            x_needle_tip = x_needle * needle_offset
+            Jx_needle_tip = haminus8(needle_offset) @ Jx_needle
+            Jt_needle_tip = np.asarray(
+                DQ_Kinematics.translation_jacobian(
+                    Jx_needle_tip, x_needle_tip
                 ),
                 dtype=np.float64,
             )
-            J_plane = np.asarray(
-                DQ_Kinematics.plane_to_point_distance_jacobian(
-                    Jpi_needle, p_vessel
+
+            n_vessel = ns_vessel[0]
+            p_vessel = ps_vessel[0]
+            line = n_vessel + E_ * cross(p_vessel, n_vessel)
+            plane = n_vessel + E_ * dot(p_vessel, n_vessel)
+
+            insertion_angle = 2.0 * math.pi / 3.0
+            phi_min = math.pi / 6.0
+            phi_max = math.pi / 2.0
+            h_min = 0.0
+            h_max = 0.05
+
+            W_insertion = insertion_W(
+                Jt_needle_tip,
+                line,
+                insertion_angle,
+                plane,
+                x_needle_tip,
+            )
+
+            needle_tip_t = translation(x_needle_tip)
+            h = float(
+                DQ_Geometry.point_to_plane_distance(needle_tip_t, plane)
+            )
+            J_h = np.asarray(
+                DQ_Kinematics.point_to_plane_distance_jacobian(
+                    Jt_needle_tip, needle_tip_t, plane
                 ),
                 dtype=np.float64,
             )
-            W = np.vstack((J_radius, -J_radius, J_plane, -J_plane))
+
+            W_phi = phi_z_constraint_W(
+                n_vessel,
+                r_needle,
+                Jr_needle,
+                h,
+                J_h,
+                phi_min,
+                phi_max,
+                h_min,
+                h_max,
+            )
+
+            W = np.vstack((
+                np.asarray(W_insertion, dtype=np.float64).reshape(1, -1),
+                np.asarray(W_phi, dtype=np.float64).reshape(1, -1),
+            ))
             W_needle = np.vstack((W_needle, W)) if W_needle is not None else W
-
-    if insertion_constraints:
-        if not ps_vessel or not ns_vessel:
-            raise ValueError(
-                "ps_vessel and ns_vessel must be non-empty when "
-                "insertion constraints are enabled."
-            )
-
-        x_needle_tip = x_needle * needle_offset
-        Jx_needle_tip = haminus8(needle_offset) @ Jx_needle
-        Jt_needle_tip = np.asarray(
-            DQ_Kinematics.translation_jacobian(
-                Jx_needle_tip, x_needle_tip
-            ),
-            dtype=np.float64,
-        )
-
-        n_vessel = ns_vessel[0]
-        p_vessel = ps_vessel[0]
-        line = n_vessel + E_ * cross(p_vessel, n_vessel)
-        plane = n_vessel + E_ * dot(p_vessel, n_vessel)
-
-        insertion_angle = 2.0 * math.pi / 3.0
-        phi_min = math.pi / 6.0
-        phi_max = math.pi / 2.0
-        h_min = 0.0
-        h_max = 0.05
-
-        W_insertion = insertion_W(
-            Jt_needle_tip,
-            line,
-            insertion_angle,
-            plane,
-            x_needle_tip,
-        )
-
-        needle_tip_t = translation(x_needle_tip)
-        h = float(
-            DQ_Geometry.point_to_plane_distance(needle_tip_t, plane)
-        )
-        J_h = np.asarray(
-            DQ_Kinematics.point_to_plane_distance_jacobian(
-                Jt_needle_tip, needle_tip_t, plane
-            ),
-            dtype=np.float64,
-        )
-
-        W_phi = phi_z_constraint_W(
-            n_vessel,
-            r_needle,
-            Jr_needle,
-            h,
-            J_h,
-            phi_min,
-            phi_max,
-            h_min,
-            h_max,
-        )
-
-        W = np.vstack((
-            np.asarray(W_insertion, dtype=np.float64).reshape(1, -1),
-            np.asarray(W_phi, dtype=np.float64).reshape(1, -1),
-        ))
-        W_needle = np.vstack((W_needle, W)) if W_needle is not None else W
 
     if W_needle is None:
         return np.empty((0, Jx_needle.shape[1]), dtype=np.float64)
@@ -447,156 +449,158 @@ def needle_w(
     verbose = normalize_verbose(verbose)
     w_needle = None
 
-    if not insertion_constraints:
-        for vessel_index, p_vessel in enumerate(ps_vessel):
-            current_radius_squared = float(
-                DQ_Geometry.point_to_point_squared_distance(
-                    p_needle,
-                    p_vessel,
+    if ps_vessel is not None:
+
+        if not insertion_constraints:
+            for vessel_index, p_vessel in enumerate(ps_vessel):
+                current_radius_squared = float(
+                    DQ_Geometry.point_to_point_squared_distance(
+                        p_needle,
+                        p_vessel,
+                    )
                 )
+
+                lower_radius = max(
+                    0.0,
+                    needle_radius - d_safe_radius,
+                )
+                upper_radius = needle_radius + d_safe_radius
+
+                lower_radius_squared = lower_radius ** 2
+                upper_radius_squared = upper_radius ** 2
+
+                radius_error_one = (
+                        upper_radius_squared - current_radius_squared
+                )
+                radius_error_two = (
+                        current_radius_squared - lower_radius_squared
+                )
+
+                n_needle = r_needle * k_ * conj(r_needle)
+                d_needle = dot(p_needle, n_needle)
+                pi_needle = n_needle + E_ * d_needle
+
+                current_plane_distance = float(
+                    DQ_Geometry.point_to_plane_distance(
+                        p_vessel,
+                        pi_needle,
+                    )
+                )
+
+                plane_error_one = (
+                        d_safe_planes - current_plane_distance
+                )
+                plane_error_two = (
+                        current_plane_distance + d_safe_planes
+                )
+
+                debug_radius(
+                    verbose,
+                    vessel_index,
+                    lower_radius,
+                    math.sqrt(current_radius_squared),
+                    upper_radius,
+                    radius_error_one,
+                    radius_error_two,
+                )
+                debug_plane(
+                    verbose,
+                    vessel_index,
+                    current_plane_distance,
+                    plane_error_one,
+                    plane_error_two,
+                )
+
+                w = np.array(
+                    [
+                        vfi_gain_radius * radius_error_one,
+                        vfi_gain_radius * radius_error_two,
+                        2.0 * vfi_gain_planes * plane_error_one,
+                        2.0 * vfi_gain_planes * plane_error_two,
+                    ],
+                    dtype=np.float64,
+                ).reshape(-1, 1)
+                w_needle = np.vstack((w_needle, w)) if w_needle is not None else w
+
+
+
+        if insertion_constraints:
+            if not ps_vessel or not ns_vessel:
+                raise ValueError(
+                    "ps_vessel and ns_vessel must be non-empty when "
+                    "insertion constraints are enabled."
+                )
+
+            x_needle_tip = x_needle * needle_offset
+            n_vessel = ns_vessel[0]
+            p_vessel = ps_vessel[0]
+            line = n_vessel + E_ * cross(p_vessel, n_vessel)
+            plane = n_vessel + E_ * dot(p_vessel, n_vessel)
+
+            insertion_angle = 2.0 * math.pi / 3.0
+            insertion_vfi_gain = 1.0
+            phi_vfi_gain = 1.0
+            phi_min = math.pi / 6.0
+            phi_max = math.pi / 2.0
+            h_min = 0.0
+            h_max = 0.05
+
+            w_insertion = insertion_w(
+                line,
+                plane,
+                insertion_angle,
+                x_needle_tip,
+                insertion_vfi_gain,
             )
 
-            lower_radius = max(
-                0.0,
-                needle_radius - d_safe_radius,
-            )
-            upper_radius = needle_radius + d_safe_radius
-
-            lower_radius_squared = lower_radius ** 2
-            upper_radius_squared = upper_radius ** 2
-
-            radius_error_one = (
-                    upper_radius_squared - current_radius_squared
-            )
-            radius_error_two = (
-                    current_radius_squared - lower_radius_squared
-            )
-
-            n_needle = r_needle * k_ * conj(r_needle)
-            d_needle = dot(p_needle, n_needle)
-            pi_needle = n_needle + E_ * d_needle
-
-            current_plane_distance = float(
+            h = float(
                 DQ_Geometry.point_to_plane_distance(
-                    p_vessel,
-                    pi_needle,
+                    translation(x_needle_tip), plane
                 )
             )
+            w_phi = phi_z_constraint_w(
+                n_vessel,
+                r_needle,
+                h,
+                phi_min,
+                phi_max,
+                h_min,
+                h_max,
+                phi_vfi_gain,
+            )
 
-            plane_error_one = (
-                    d_safe_planes - current_plane_distance
+            current_dot = phi_z(n_vessel, r_needle)
+            safe_dot = dot_product_safe(
+                h, phi_min, phi_max, h_min, h_max
             )
-            plane_error_two = (
-                    current_plane_distance + d_safe_planes
+            current_angle = math.acos(
+                float(np.clip(current_dot, -1.0, 1.0))
+            )
+            safe_angle = math.acos(
+                float(np.clip(safe_dot, -1.0, 1.0))
+            )
+            h_n = float(
+                np.clip((h - h_min) / (h_max - h_min), 0.0, 1.0)
             )
 
-            debug_radius(
+            debug_insertion(
                 verbose,
-                vessel_index,
-                lower_radius,
-                math.sqrt(current_radius_squared),
-                upper_radius,
-                radius_error_one,
-                radius_error_two,
-            )
-            debug_plane(
-                verbose,
-                vessel_index,
-                current_plane_distance,
-                plane_error_one,
-                plane_error_two,
+                0,
+                h,
+                h_n,
+                math.degrees(current_angle),
+                math.degrees(safe_angle),
+                current_dot,
+                safe_dot,
+                current_dot - safe_dot,
+                w_insertion,
             )
 
             w = np.array(
-                [
-                    vfi_gain_radius * radius_error_one,
-                    vfi_gain_radius * radius_error_two,
-                    2.0 * vfi_gain_planes * plane_error_one,
-                    2.0 * vfi_gain_planes * plane_error_two,
-                ],
+                [w_insertion, w_phi],
                 dtype=np.float64,
             ).reshape(-1, 1)
             w_needle = np.vstack((w_needle, w)) if w_needle is not None else w
-
-
-
-    if insertion_constraints:
-        if not ps_vessel or not ns_vessel:
-            raise ValueError(
-                "ps_vessel and ns_vessel must be non-empty when "
-                "insertion constraints are enabled."
-            )
-
-        x_needle_tip = x_needle * needle_offset
-        n_vessel = ns_vessel[0]
-        p_vessel = ps_vessel[0]
-        line = n_vessel + E_ * cross(p_vessel, n_vessel)
-        plane = n_vessel + E_ * dot(p_vessel, n_vessel)
-
-        insertion_angle = 2.0 * math.pi / 3.0
-        insertion_vfi_gain = 1.0
-        phi_vfi_gain = 1.0
-        phi_min = math.pi / 6.0
-        phi_max = math.pi / 2.0
-        h_min = 0.0
-        h_max = 0.05
-
-        w_insertion = insertion_w(
-            line,
-            plane,
-            insertion_angle,
-            x_needle_tip,
-            insertion_vfi_gain,
-        )
-
-        h = float(
-            DQ_Geometry.point_to_plane_distance(
-                translation(x_needle_tip), plane
-            )
-        )
-        w_phi = phi_z_constraint_w(
-            n_vessel,
-            r_needle,
-            h,
-            phi_min,
-            phi_max,
-            h_min,
-            h_max,
-            phi_vfi_gain,
-        )
-
-        current_dot = phi_z(n_vessel, r_needle)
-        safe_dot = dot_product_safe(
-            h, phi_min, phi_max, h_min, h_max
-        )
-        current_angle = math.acos(
-            float(np.clip(current_dot, -1.0, 1.0))
-        )
-        safe_angle = math.acos(
-            float(np.clip(safe_dot, -1.0, 1.0))
-        )
-        h_n = float(
-            np.clip((h - h_min) / (h_max - h_min), 0.0, 1.0)
-        )
-
-        debug_insertion(
-            verbose,
-            0,
-            h,
-            h_n,
-            math.degrees(current_angle),
-            math.degrees(safe_angle),
-            current_dot,
-            safe_dot,
-            current_dot - safe_dot,
-            w_insertion,
-        )
-
-        w = np.array(
-            [w_insertion, w_phi],
-            dtype=np.float64,
-        ).reshape(-1, 1)
-        w_needle = np.vstack((w_needle, w)) if w_needle is not None else w
 
     if w_needle is None:
         return np.empty((0, 1), dtype=np.float64)
