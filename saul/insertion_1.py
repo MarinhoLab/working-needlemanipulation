@@ -166,5 +166,53 @@ for i in range(1000):
     time.sleep(1.0 / 60.0)
 print("Needle positioning loop finished.")
 
+needle_driving_1_controller = NeedleController(
+        kinematics=rrobot,
+        gain=2000.0,
+        damping=np.diag([1,1,1,1,1,1,0,0,0]),
+        alpha=1.0,
+        rcm_constraints=[
+            (rrcm["position"], rrcm["radius"], rcm_joint_index)],
+        relative_needle_pose=relative_needle_pose,
+        vessel_positions=[translation(p1)],
+        vessel_normals=[v],
+        needle_radius=radius,
+        d_safe_angles=np.pi / 8.0,
+        vfi_gain=1.0,
+        verbose=True,
+        insertion_constraints=False
+    )
+
+print("Starting needle driving loop...")
+q = sim.get_right_robot_joints()
+needle_center = rrobot.fkm(q) * conj(relative_needle_pose)
+for i in range(500):
+
+    angle = 0.001 * i * math.pi / 2.0
+    rotate = math.cos(angle / 2.0) + math.sin(angle / 2.0) * (i_ * 0.0 + j_ * 1.0 + k_ * 0.0)
+
+    translate = 1 + 0.5 * E_ * (i_ * 0.0 + j_ * 0.00001 * i + k_ * 0.0)
+
+    if i < 1500:
+        xdc = needle_center * rotate * relative_needle_pose
+
+    x = rrobot.fkm(q)
+    sim.set_frame("xd_new", xdc)
+    sim.set_frame("x", x)
+    sim.set_frame("p1", p1)
+    sim.set_frame("needle_center", needle_center)
+    sim.set_frame("needle_rotate", needle_center * rotate)
+
+    for step in range(CONTROLLER_STEPS):
+        # Solve the quadratic program
+        u = needle_driving_1_controller.compute_setpoint_control_signal(q, xdc)
+
+        # Update the current joint positions
+        q = q + u * CONTROLLER_SAMPLING_TIME
+        print(f"Last error norm {np.linalg.norm(needle_driving_1_controller.get_last_error())}")
+
+    sim.set_right_robot_joints(q)
+
+    time.sleep(1/60)
 
 sim.disconnect()
