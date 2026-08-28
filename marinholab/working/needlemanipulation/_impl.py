@@ -19,6 +19,7 @@ angle band) and a tip point-to-line insertion constraint are appended.
 """
 
 import math
+from termcolor import cprint
 
 import numpy as np
 from dqrobotics import *
@@ -304,33 +305,34 @@ def needle_jacobian(
 
     W_needle = None
 
-    for p_vessel in ps_vessel:
-        J_radius = np.asarray(
-            DQ_Kinematics.point_to_point_distance_jacobian(
-                Jt_needle, p_needle, p_vessel
-            ),
-            dtype=np.float64,
-        )
-        J_plane = np.asarray(
-            DQ_Kinematics.plane_to_point_distance_jacobian(
-                Jpi_needle, p_vessel
-            ),
-            dtype=np.float64,
-        )
-        W = np.vstack((J_radius, -J_radius, J_plane, -J_plane))
-        W_needle = np.vstack((W_needle, W)) if W_needle is not None else W
-
-    if ns_vessel is not None:
-        for i, n_vessel in enumerate(ns_vessel):
-            # Replaced by the depth-dependent orientation constraint.
-            if insertion_constraints and i == 0:
-                continue
-
-            J_normal = normal_dot_product_jacobian(
-                n_vessel, k_, r_needle, Jr_needle
+    if not insertion_constraints:
+        for p_vessel in ps_vessel:
+            J_radius = np.asarray(
+                DQ_Kinematics.point_to_point_distance_jacobian(
+                    Jt_needle, p_needle, p_vessel
+                ),
+                dtype=np.float64,
             )
-            W = np.vstack((J_normal, -J_normal))
+            J_plane = np.asarray(
+                DQ_Kinematics.plane_to_point_distance_jacobian(
+                    Jpi_needle, p_vessel
+                ),
+                dtype=np.float64,
+            )
+            W = np.vstack((J_radius, -J_radius, J_plane, -J_plane))
             W_needle = np.vstack((W_needle, W)) if W_needle is not None else W
+
+        if ns_vessel is not None:
+            for i, n_vessel in enumerate(ns_vessel):
+                # Replaced by the depth-dependent orientation constraint.
+                if insertion_constraints and i == 0:
+                    continue
+
+                J_normal = normal_dot_product_jacobian(
+                    n_vessel, k_, r_needle, Jr_needle
+                )
+                W = np.vstack((J_normal, -J_normal))
+                W_needle = np.vstack((W_needle, W)) if W_needle is not None else W
 
     if insertion_constraints:
         if not ps_vessel or not ns_vessel:
@@ -457,111 +459,112 @@ def needle_w(
     verbose = normalize_verbose(verbose)
     w_needle = None
 
-    for vessel_index, p_vessel in enumerate(ps_vessel):
-        current_radius_squared = float(
-            DQ_Geometry.point_to_point_squared_distance(
-                p_needle,
-                p_vessel,
+    if not insertion_constraints:
+        for vessel_index, p_vessel in enumerate(ps_vessel):
+            current_radius_squared = float(
+                DQ_Geometry.point_to_point_squared_distance(
+                    p_needle,
+                    p_vessel,
+                )
             )
-        )
 
-        lower_radius = max(
-            0.0,
-            needle_radius - d_safe_radius,
-        )
-        upper_radius = needle_radius + d_safe_radius
-
-        lower_radius_squared = lower_radius ** 2
-        upper_radius_squared = upper_radius ** 2
-
-        radius_error_one = (
-                upper_radius_squared - current_radius_squared
-        )
-        radius_error_two = (
-                current_radius_squared - lower_radius_squared
-        )
-
-        n_needle = r_needle * k_ * conj(r_needle)
-        d_needle = dot(p_needle, n_needle)
-        pi_needle = n_needle + E_ * d_needle
-
-        current_plane_distance = float(
-            DQ_Geometry.point_to_plane_distance(
-                p_vessel,
-                pi_needle,
+            lower_radius = max(
+                0.0,
+                needle_radius - d_safe_radius,
             )
-        )
+            upper_radius = needle_radius + d_safe_radius
 
-        plane_error_one = (
-                d_safe_planes - current_plane_distance
-        )
-        plane_error_two = (
-                current_plane_distance + d_safe_planes
-        )
+            lower_radius_squared = lower_radius ** 2
+            upper_radius_squared = upper_radius ** 2
 
-        debug_radius(
-            verbose,
-            vessel_index,
-            lower_radius,
-            math.sqrt(current_radius_squared),
-            upper_radius,
-            radius_error_one,
-            radius_error_two,
-        )
-        debug_plane(
-            verbose,
-            vessel_index,
-            current_plane_distance,
-            plane_error_one,
-            plane_error_two,
-        )
+            radius_error_one = (
+                    upper_radius_squared - current_radius_squared
+            )
+            radius_error_two = (
+                    current_radius_squared - lower_radius_squared
+            )
 
-        w = np.array(
-            [
-                vfi_gain_radius * radius_error_one,
-                vfi_gain_radius * radius_error_two,
-                2.0 * vfi_gain_planes * plane_error_one,
-                2.0 * vfi_gain_planes * plane_error_two,
-            ],
-            dtype=np.float64,
-        ).reshape(-1, 1)
-        w_needle = np.vstack((w_needle, w)) if w_needle is not None else w
+            n_needle = r_needle * k_ * conj(r_needle)
+            d_needle = dot(p_needle, n_needle)
+            pi_needle = n_needle + E_ * d_needle
 
-    if ns_vessel is not None:
-        for normal_index, n_vessel in enumerate(ns_vessel):
-            # Must match the skipped rows in needle_jacobian().
-            if insertion_constraints and normal_index == 0:
-                continue
+            current_plane_distance = float(
+                DQ_Geometry.point_to_plane_distance(
+                    p_vessel,
+                    pi_needle,
+                )
+            )
 
-            current_dot = float(dot(n_vessel, Ad(r_needle, k_)).q[0])
-            max_dot = math.cos(math.pi / 2.0 - d_safe_angles)
-            min_dot = math.cos(math.pi / 2.0 + d_safe_angles)
-            dot_error_one = max_dot - current_dot
-            dot_error_two = current_dot - min_dot
+            plane_error_one = (
+                    d_safe_planes - current_plane_distance
+            )
+            plane_error_two = (
+                    current_plane_distance + d_safe_planes
+            )
 
-            debug_orientation(
+            debug_radius(
                 verbose,
-                normal_index,
-                current_dot,
-                dot_error_one,
-                dot_error_two,
+                vessel_index,
+                lower_radius,
+                math.sqrt(current_radius_squared),
+                upper_radius,
+                radius_error_one,
+                radius_error_two,
+            )
+            debug_plane(
+                verbose,
+                vessel_index,
+                current_plane_distance,
+                plane_error_one,
+                plane_error_two,
             )
 
             w = np.array(
                 [
-                    2.0 * vfi_gain_angles * dot_error_one,
-                    2.0 * vfi_gain_angles * dot_error_two,
+                    vfi_gain_radius * radius_error_one,
+                    vfi_gain_radius * radius_error_two,
+                    2.0 * vfi_gain_planes * plane_error_one,
+                    2.0 * vfi_gain_planes * plane_error_two,
                 ],
                 dtype=np.float64,
             ).reshape(-1, 1)
+            w_needle = np.vstack((w_needle, w)) if w_needle is not None else w
 
-            if np.any(w < 0.0):
-                cprint(
-                    f"     Constraint violation for dot product: {w}",
-                    "red",
+        if ns_vessel is not None:
+            for normal_index, n_vessel in enumerate(ns_vessel):
+                # Must match the skipped rows in needle_jacobian().
+                if insertion_constraints and normal_index == 0:
+                    continue
+
+                current_dot = float(dot(n_vessel, Ad(r_needle, k_)).q[0])
+                max_dot = math.cos(math.pi / 2.0 - d_safe_angles)
+                min_dot = math.cos(math.pi / 2.0 + d_safe_angles)
+                dot_error_one = max_dot - current_dot
+                dot_error_two = current_dot - min_dot
+
+                debug_orientation(
+                    verbose,
+                    normal_index,
+                    current_dot,
+                    dot_error_one,
+                    dot_error_two,
                 )
 
-            w_needle = np.vstack((w_needle, w)) if w_needle is not None else w
+                w = np.array(
+                    [
+                        2.0 * vfi_gain_angles * dot_error_one,
+                        2.0 * vfi_gain_angles * dot_error_two,
+                    ],
+                    dtype=np.float64,
+                ).reshape(-1, 1)
+
+                if np.any(w < 0.0):
+                    cprint(
+                        f"     Constraint violation for dot product: {w}",
+                        "red",
+                    )
+
+                w_needle = np.vstack((w_needle, w)) if w_needle is not None else w
 
     if insertion_constraints:
         if not ps_vessel or not ns_vessel:

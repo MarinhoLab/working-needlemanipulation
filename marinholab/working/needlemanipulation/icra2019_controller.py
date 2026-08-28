@@ -133,6 +133,8 @@ class ICRA19TaskSpaceController:
 
         # Get the line-to-point square distance
         Dl_p = DQ_Geometry.point_to_line_squared_distance(p, l_dq)
+        if abs(Dl_p) < 1e-6:
+            Jl_p = np.ones_like(Jl_p) * 1e-3
 
         # Get the distance error
         D_safe = d_safe ** 2

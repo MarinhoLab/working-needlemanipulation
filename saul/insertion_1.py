@@ -101,9 +101,6 @@ lrobot.set_upper_q_limit(upper_q_limit)
 rrobot.set_lower_q_limit(lower_q_limit)
 rrobot.set_upper_q_limit(upper_q_limit)
 
-lrcm1 = {"position": sim.get_left_center_sphere()[0], "radius": sim.get_left_center_sphere()[1]}
-lrcm2 = {"position": sim.get_left_trocar_sphere()[0], "radius": sim.get_left_trocar_sphere()[1]}
-rrcm1 = {"position": sim.get_right_center_sphere()[0], "radius": sim.get_right_center_sphere()[1]}
 rrcm2 = {"position": sim.get_right_trocar_sphere()[0], "radius": sim.get_right_trocar_sphere()[1]}
 
 translate = 1 + 0.5 * dq.E_ * dq.j_ * 0.0005
@@ -137,13 +134,10 @@ needle_controller = NeedleController(
         damping=np.diag([1,1,1,1,1,1,0,0,0]),
         alpha=1.0,
         rcm_constraints=[
-            (rrcm1["position"], rrcm1["radius"], rcm1_joint_index),
             (rrcm2["position"], rrcm2["radius"], rcm2_joint_index)],
         relative_needle_pose=relative_needle_pose,
-        #vessel_positions=[dq.translation(p1), dq.translation(p2)],
-        #vessel_normals=[n1, n2],
-        vessel_positions=None,
-        vessel_normals=None,
+        vessel_positions=[dq.translation(p1)],
+        vessel_normals=[n1],
         needle_radius=None,
         d_safe_angles=None,
         vfi_gain=1.0,
@@ -200,7 +194,6 @@ needle_controller = NeedleController(
         damping=np.diag([1,1,1,1,1,1,0,0,0]),
         alpha=1.0,
         rcm_constraints=[
-            (rrcm1["position"], rrcm1["radius"], rcm1_joint_index),
             (rrcm2["position"], rrcm2["radius"], rcm2_joint_index)],
         relative_needle_pose=relative_needle_pose,
         vessel_positions=[translation(p1)],
