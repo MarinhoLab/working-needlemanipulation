@@ -118,6 +118,11 @@ rrobot.set_effector(robot_ee_to_needle_tip)
 # Vessel normals are always j_ in this world
 v = j_
 
+####################################################################
+## Ascertain that the proposed controller's constraints matches the
+## position send by the simulation in the previous step.
+####################################################################
+
 safety_set_controller = NeedleController(
         kinematics=rrobot,
         gain=1500.0,
@@ -154,6 +159,10 @@ for i in range(200):
 
     time.sleep(1.0 / 60.0)
 print("Safety set controller loop finished.")
+
+####################################################################
+## Controller to position the needle tip at p1.
+####################################################################
 
 needle_positioning_controller = NeedleController(
         kinematics=rrobot,
@@ -192,11 +201,16 @@ for i in range(2000):
     time.sleep(1.0 / 60.0)
 print("Needle positioning loop finished.")
 
+####################################################################
+## Drive the needle through p1.
+## In this version it is not yet able to puncture through p1.
+####################################################################
+
 needle_driving_1_controller = NeedleController(
         kinematics=rrobot,
         gain=100.0,
         damping=np.diag([1,1,1,1,1,1,0.000001,0.000001,0.000001]),
-        alpha=0.999,
+        alpha=1.0,
         rcm_constraints=[
             (rrcm["position"], rrcm["radius"], rcm_joint_index)],
         relative_needle_pose=needle_tip_to_needle_center,
@@ -219,11 +233,7 @@ for i in range(50):
 
     angle = 0.001 * i * math.pi / 2.0
     rotate = math.cos(angle / 2.0) + math.sin(angle / 2.0) * k_
-
-    translate = 1 + 0.5 * E_ * k_ * 0.00001
-
-    if i < 1500:
-        xdc = needle_center * rotate * needle_center_to_needle_tip
+    xdc = needle_center * rotate * needle_center_to_needle_tip
 
     x = rrobot.fkm(q)
     needle_center = x * needle_tip_to_needle_center
@@ -247,6 +257,11 @@ for i in range(50):
 
     time.sleep(1/60)
 print("Needle driving loop finished.")
+
+####################################################################
+## Using the constraint only at p1, attempt to drive the needle
+## to p2.
+####################################################################
 
 print("Starting needle driving loop...")
 q = sim.get_right_robot_joints()
@@ -288,6 +303,10 @@ for i in range(50):
     time.sleep(1/60)
 print("Needle driving loop finished.")
 
+####################################################################
+## Needle driving with p1 and p2, attempt to drive through p2.
+####################################################################
+
 print("Starting needle driving loop...")
 q = sim.get_right_robot_joints()
 p1 = sim.get_right_tube_target_point()
@@ -301,7 +320,7 @@ needle_driving_1_controller = NeedleController(
         kinematics=rrobot,
         gain=100.0,
         damping=np.diag([1,1,1,1,1,1,0.000001,0.000001,0.000001]),
-        alpha=0.999,
+        alpha=1.0,
         rcm_constraints=[
             (rrcm["position"], rrcm["radius"], rcm_joint_index)],
         relative_needle_pose=needle_tip_to_needle_center,
