@@ -144,7 +144,7 @@ q = sim.get_right_robot_joints()
 xdc = None
 
 print("Starting needle positioning loop...")
-for i in range(1000):
+for i in range(500):
     sim.set_frame("needle", sim.get_control_needle_pose())
 
     x = rrobot.fkm(q)
@@ -185,6 +185,8 @@ needle_driving_1_controller = NeedleController(
 
 print("Starting needle driving loop...")
 q = sim.get_right_robot_joints()
+p1 = translate * sim.get_right_tube_target_point() * rotate1 * rotate2
+sim.set_frame("p1", p1)
 needle_center = rrobot.fkm(q) * conj(relative_needle_pose)
 for i in range(500):
 
@@ -214,5 +216,6 @@ for i in range(500):
     sim.set_right_robot_joints(q)
 
     time.sleep(1/60)
+print("Needle driving loop finished.")
 
 sim.disconnect()

@@ -322,18 +322,6 @@ def needle_jacobian(
             W = np.vstack((J_radius, -J_radius, J_plane, -J_plane))
             W_needle = np.vstack((W_needle, W)) if W_needle is not None else W
 
-        if ns_vessel is not None:
-            for i, n_vessel in enumerate(ns_vessel):
-                # Replaced by the depth-dependent orientation constraint.
-                if insertion_constraints and i == 0:
-                    continue
-
-                J_normal = normal_dot_product_jacobian(
-                    n_vessel, k_, r_needle, Jr_needle
-                )
-                W = np.vstack((J_normal, -J_normal))
-                W_needle = np.vstack((W_needle, W)) if W_needle is not None else W
-
     if insertion_constraints:
         if not ps_vessel or not ns_vessel:
             raise ValueError(
@@ -530,41 +518,7 @@ def needle_w(
             ).reshape(-1, 1)
             w_needle = np.vstack((w_needle, w)) if w_needle is not None else w
 
-        if ns_vessel is not None:
-            for normal_index, n_vessel in enumerate(ns_vessel):
-                # Must match the skipped rows in needle_jacobian().
-                if insertion_constraints and normal_index == 0:
-                    continue
 
-                current_dot = float(dot(n_vessel, Ad(r_needle, k_)).q[0])
-                max_dot = math.cos(math.pi / 2.0 - d_safe_angles)
-                min_dot = math.cos(math.pi / 2.0 + d_safe_angles)
-                dot_error_one = max_dot - current_dot
-                dot_error_two = current_dot - min_dot
-
-                debug_orientation(
-                    verbose,
-                    normal_index,
-                    current_dot,
-                    dot_error_one,
-                    dot_error_two,
-                )
-
-                w = np.array(
-                    [
-                        2.0 * vfi_gain_angles * dot_error_one,
-                        2.0 * vfi_gain_angles * dot_error_two,
-                    ],
-                    dtype=np.float64,
-                ).reshape(-1, 1)
-
-                if np.any(w < 0.0):
-                    cprint(
-                        f"     Constraint violation for dot product: {w}",
-                        "red",
-                    )
-
-                w_needle = np.vstack((w_needle, w)) if w_needle is not None else w
 
     if insertion_constraints:
         if not ps_vessel or not ns_vessel:
