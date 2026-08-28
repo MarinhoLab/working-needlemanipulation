@@ -226,73 +226,34 @@ needle_driving_1_controller = NeedleController(
 print("Starting needle driving loop (step 1)...")
 q = sim.get_right_robot_joints()
 p1 = sim.get_right_tube_target_point()
-sim.set_frame("p1", p1)
-needle_center = rrobot.fkm(q) * needle_tip_to_needle_center
-sim.clear_frames()
-for i in range(50):
-
-    angle = 0.001 * i * math.pi / 2.0
-    rotate = math.cos(angle / 2.0) + math.sin(angle / 2.0) * k_
-    xdc = needle_center * rotate * needle_center_to_needle_tip
-
-    x = rrobot.fkm(q)
-    needle_center = x * needle_tip_to_needle_center
-    sim.set_frame("xd_new", xdc)
-    sim.set_frame("x", x)
-    sim.set_frame("p1", p1)
-    sim.set_frame("needle_center", needle_center)
-    sim.set_frame("plane_1", needle_center * (1 + 0.5*E_*0.001*k_))
-    sim.set_frame("plane_2", needle_center * (1 + 0.5*E_*-0.001*k_))
-    sim.set_frame("needle_rotate", needle_center * rotate)
-
-    for step in range(CONTROLLER_STEPS):
-        # Solve the quadratic program
-        u = needle_driving_1_controller.compute_setpoint_control_signal(q, xdc)
-
-        # Update the current joint positions
-        q = q + u * CONTROLLER_SAMPLING_TIME
-        print(f"Last error norm {np.linalg.norm(needle_driving_1_controller.get_last_error())}")
-
-    sim.set_right_robot_joints(q)
-
-    time.sleep(1/60)
-print("Needle driving loop finished.")
-
-####################################################################
-## Using the constraint only at p1, attempt to drive the needle
-## to p2.
-####################################################################
-
-print("Starting needle driving loop...")
-q = sim.get_right_robot_joints()
 p2 = sim.get_left_tube_target_point()
+p_12 = 1 + 0.5 * E_ * (0.5*(translation(p1) + translation(p2)) - 0.001*j_)
+sim.set_frame("p1", p1)
 sim.set_frame("p2", p2)
+
 needle_center = rrobot.fkm(q) * needle_tip_to_needle_center
 sim.clear_frames()
-for i in range(50):
 
-    angle = 0.001 * i * math.pi / 2.0
-    rotate = math.cos(angle / 2.0) + math.sin(angle / 2.0) * k_
+STEPS_TO_INSERT_NEEDLE = 1000
+for i in range(STEPS_TO_INSERT_NEEDLE):
 
-    translate = 1 + 0.5 * E_ * k_ * 0.00001
-
-    if i < 1500:
-        xdc = needle_center * rotate * needle_center_to_needle_tip
+    if i < int(STEPS_TO_INSERT_NEEDLE / 2):
+        xd = p_12
+    else:
+        xd = p2
 
     x = rrobot.fkm(q)
     needle_center = x * needle_tip_to_needle_center
-    sim.set_frame("xd_new", xdc)
+    sim.set_frame("p12", p_12)
     sim.set_frame("x", x)
     sim.set_frame("p1", p1)
-    sim.set_frame("p2", p2)
     sim.set_frame("needle_center", needle_center)
     sim.set_frame("plane_1", needle_center * (1 + 0.5*E_*0.001*k_))
     sim.set_frame("plane_2", needle_center * (1 + 0.5*E_*-0.001*k_))
-    sim.set_frame("needle_rotate", needle_center * rotate)
 
     for step in range(CONTROLLER_STEPS):
         # Solve the quadratic program
-        u = needle_driving_1_controller.compute_setpoint_control_signal(q, xdc)
+        u = needle_driving_1_controller.compute_setpoint_control_signal(q, xd)
 
         # Update the current joint positions
         q = q + u * CONTROLLER_SAMPLING_TIME
@@ -311,8 +272,10 @@ print("Starting needle driving loop...")
 q = sim.get_right_robot_joints()
 p1 = sim.get_right_tube_target_point()
 p2 = sim.get_left_tube_target_point()
+p22 = p2 * (1 + 0.5 * E_ * 0.002*j_)
 sim.set_frame("p1", p1)
 sim.set_frame("p2", p2)
+sim.set_frame("p22", p22)
 needle_center = rrobot.fkm(q) * needle_tip_to_needle_center
 sim.clear_frames()
 
@@ -335,28 +298,20 @@ needle_driving_1_controller = NeedleController(
 
 for i in range(100):
 
-    angle = 0.001 * i * math.pi / 2.0
-    rotate = math.cos(angle / 2.0) + math.sin(angle / 2.0) * k_
-
-    translate = 1 + 0.5 * E_ * k_ * 0.00001
-
-    if i < 1500:
-        xdc = needle_center * rotate * needle_center_to_needle_tip
+    xd = p22
 
     x = rrobot.fkm(q)
     needle_center = x * needle_tip_to_needle_center
-    sim.set_frame("xd_new", xdc)
     sim.set_frame("x", x)
     sim.set_frame("p1", p1)
     sim.set_frame("p2", p2)
     sim.set_frame("needle_center", needle_center)
     sim.set_frame("plane_1", needle_center * (1 + 0.5*E_*0.001*k_))
     sim.set_frame("plane_2", needle_center * (1 + 0.5*E_*-0.001*k_))
-    sim.set_frame("needle_rotate", needle_center * rotate)
 
     for step in range(CONTROLLER_STEPS):
         # Solve the quadratic program
-        u = needle_driving_1_controller.compute_setpoint_control_signal(q, xdc)
+        u = needle_driving_1_controller.compute_setpoint_control_signal(q, xd)
 
         # Update the current joint positions
         q = q + u * CONTROLLER_SAMPLING_TIME
