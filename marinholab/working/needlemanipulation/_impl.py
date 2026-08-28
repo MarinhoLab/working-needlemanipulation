@@ -447,7 +447,6 @@ def needle_w(
     """
     p_needle_center = translation(x_needle_center)
     r_needle_center = rotation(x_needle_center)
-    p_needle_tip = translation(x_needle_tip)
     r_needle_tip = rotation(x_needle_tip)
 
     verbose = normalize_verbose(verbose)

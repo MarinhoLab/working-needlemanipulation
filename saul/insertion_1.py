@@ -218,9 +218,9 @@ sim.clear_frames()
 for i in range(500):
 
     angle = 0.001 * i * math.pi / 2.0
-    rotate = math.cos(angle / 2.0) + math.sin(angle / 2.0) * (i_ * 0.0 + j_ * 1.0 + k_ * 0.0)
+    rotate = math.cos(angle / 2.0) + math.sin(angle / 2.0) * k_
 
-    translate = 1 + 0.5 * E_ * (i_ * 0.0 + j_ * 0.00001 * i + k_ * 0.0)
+    translate = 1 + 0.5 * E_ * k_ * 0.00001
 
     if i < 1500:
         xdc = needle_center * rotate * needle_center_to_needle_tip
@@ -231,8 +231,8 @@ for i in range(500):
     sim.set_frame("x", x)
     sim.set_frame("p1", p1)
     sim.set_frame("needle_center", needle_center)
-    sim.set_frame("plane_1", needle_center * (1 + 0.5*E_*0.001*j_))
-    sim.set_frame("plane_2", needle_center * (1 + 0.5*E_*-0.001*j_))
+    sim.set_frame("plane_1", needle_center * (1 + 0.5*E_*0.001*k_))
+    sim.set_frame("plane_2", needle_center * (1 + 0.5*E_*-0.001*k_))
     sim.set_frame("needle_rotate", needle_center * rotate)
 
     for step in range(CONTROLLER_STEPS):
