@@ -120,7 +120,7 @@ v = j_
 
 safety_set_controller = NeedleController(
         kinematics=rrobot,
-        gain=1000.0,
+        gain=1500.0,
         damping=np.diag([1,1,1,1,1,1,0.000001,0.000001,0.000001]),
         alpha=1.0,
         rcm_constraints=[
@@ -157,9 +157,9 @@ print("Safety set controller loop finished.")
 
 needle_positioning_controller = NeedleController(
         kinematics=rrobot,
-        gain=100.0,
+        gain=1000.0,
         damping=np.diag([1,1,1,1,1,1,0.000001,0.000001,0.000001]),
-        alpha=0.999,
+        alpha=1.0,
         rcm_constraints=[
             (rrcm["position"], rrcm["radius"], rcm_joint_index)],
         relative_needle_pose=needle_tip_to_needle_center,
@@ -174,7 +174,7 @@ needle_positioning_controller = NeedleController(
 
 q = sim.get_right_robot_joints()
 print("Starting needle positioning loop...")
-for i in range(1000):
+for i in range(2000):
     xd = p1
 
     sim.set_frame("needle", sim.get_control_needle_pose())
@@ -215,7 +215,7 @@ p1 = sim.get_right_tube_target_point() * (1 + 0.5 * E_ * j_ * -0.0005)
 sim.set_frame("p1", p1)
 needle_center = rrobot.fkm(q) * needle_tip_to_needle_center
 sim.clear_frames()
-for i in range(100):
+for i in range(50):
 
     angle = 0.001 * i * math.pi / 2.0
     rotate = math.cos(angle / 2.0) + math.sin(angle / 2.0) * k_
