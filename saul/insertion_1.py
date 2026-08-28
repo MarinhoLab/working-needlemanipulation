@@ -40,7 +40,7 @@ from marinholab.working.needlemanipulation import NeedleController
 from marinholab.working.needlemanipulation import M3_SerialManipulatorSimulatorFriendly
 
 SIMULATOR_FREQUENCY = 60
-CONTROLLER_FREQUENCY = 250
+CONTROLLER_FREQUENCY = 1000
 CONTROLLER_STEPS = int(CONTROLLER_FREQUENCY / SIMULATOR_FREQUENCY)
 CONTROLLER_SAMPLING_TIME = 1.0 / CONTROLLER_FREQUENCY
 

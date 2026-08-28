@@ -349,7 +349,7 @@ def needle_jacobian(
             phi_min = math.pi / 6.0
             phi_max = math.pi / 2.0
             h_min = 0.0
-            h_max = 0.01
+            h_max = 0.0025
 
             W_insertion = insertion_W(
                 Jt_needle_tip,
