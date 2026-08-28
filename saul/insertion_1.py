@@ -157,7 +157,7 @@ print("Safety set controller loop finished.")
 
 needle_positioning_controller = NeedleController(
         kinematics=rrobot,
-        gain=1000.0,
+        gain=100.0,
         damping=np.diag([1,1,1,1,1,1,0.000001,0.000001,0.000001]),
         alpha=1.0,
         rcm_constraints=[
@@ -167,14 +167,14 @@ needle_positioning_controller = NeedleController(
         vessel_normals=[v],
         needle_radius=None,
         d_safe_angles=None,
-        vfi_gain=1.0,
+        vfi_gain=10.0,
         verbose=True,
         insertion_constraints=True
     )
 
 q = sim.get_right_robot_joints()
 print("Starting needle positioning loop...")
-for i in range(500):
+for i in range(1000):
     xd = p1
 
     sim.set_frame("needle", sim.get_control_needle_pose())
