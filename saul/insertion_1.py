@@ -210,9 +210,9 @@ print("Needle positioning loop finished.")
 
 needle_driving_1_controller = NeedleController(
         kinematics=rrobot,
-        gain=2000.0,
+        gain=100.0,
         damping=np.diag([1,1,1,1,1,1,0.000001,0.000001,0.000001]),
-        alpha=1.0,
+        alpha=0.999,
         rcm_constraints=[
             (rrcm["position"], rrcm["radius"], rcm_joint_index)],
         relative_needle_pose=relative_needle_pose,
@@ -230,6 +230,7 @@ q = sim.get_right_robot_joints()
 p1 = translate * sim.get_right_tube_target_point() * rotate1 * rotate2
 sim.set_frame("p1", p1)
 needle_center = rrobot.fkm(q) * conj(relative_needle_pose)
+sim.clear_frames()
 for i in range(500):
 
     angle = 0.001 * i * math.pi / 2.0
@@ -241,10 +242,13 @@ for i in range(500):
         xdc = needle_center * rotate * relative_needle_pose
 
     x = rrobot.fkm(q)
+    needle_center = x * conj(relative_needle_pose)
     sim.set_frame("xd_new", xdc)
     sim.set_frame("x", x)
     sim.set_frame("p1", p1)
     sim.set_frame("needle_center", needle_center)
+    sim.set_frame("plane_1", needle_center * (1 + 0.5*E_*0.001*j_))
+    sim.set_frame("plane_2", needle_center * (1 + 0.5*E_*-0.001*j_))
     sim.set_frame("needle_rotate", needle_center * rotate)
 
     for step in range(CONTROLLER_STEPS):

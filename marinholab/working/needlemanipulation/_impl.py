@@ -299,7 +299,7 @@ def needle_jacobian(
         dtype=np.float64,
     )
     Jpi_needle = np.asarray(
-        DQ_Kinematics.plane_jacobian(Jx_needle, x_needle, k_),
+        DQ_Kinematics.plane_jacobian(Jx_needle, x_needle, j_),
         dtype=np.float64,
     )
 
@@ -382,10 +382,10 @@ def needle_jacobian(
                 h_max,
             )
 
-            W = np.vstack((
-                np.asarray(W_insertion, dtype=np.float64).reshape(1, -1),
-                np.asarray(W_phi, dtype=np.float64).reshape(1, -1),
-            ))
+            W = np.asarray(
+                W_phi,
+                dtype=np.float64,
+            ).reshape(1, -1)
             W_needle = np.vstack((W_needle, W)) if W_needle is not None else W
 
     if W_needle is None:
@@ -597,7 +597,7 @@ def needle_w(
             )
 
             w = np.array(
-                [w_insertion, w_phi],
+                [w_phi],
                 dtype=np.float64,
             ).reshape(-1, 1)
             w_needle = np.vstack((w_needle, w)) if w_needle is not None else w
