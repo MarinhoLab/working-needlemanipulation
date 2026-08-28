@@ -247,8 +247,10 @@ def normal_dot_product_jacobian(
 
 
 def needle_jacobian(
-    Jx_needle: np.ndarray,
-    x_needle: DQ,
+    Jx_needle_tip: np.ndarray,
+    x_needle_tip: DQ,
+    Jx_needle_center: np.ndarray,
+    x_needle_center: DQ,
     ps_vessel: list[DQ],
     ns_vessel: list[DQ] | None,
     insertion_constraints: bool = False,
@@ -270,8 +272,8 @@ def needle_jacobian(
     constraint below.
 
     Args:
-        Jx_needle: Pose Jacobian of the needle frame, ``8 x DOF``.
-        x_needle: Dual-quaternion pose of the needle frame.
+        Jx_needle_center: Pose Jacobian of the needle frame, ``8 x DOF``.
+        x_needle_center: Dual-quaternion pose of the needle frame.
         ps_vessel: Vessel positions as pure dual quaternions.
         ns_vessel: Vessel normals as pure dual quaternions, or ``None`` to
             skip orientation constraints.
@@ -288,18 +290,18 @@ def needle_jacobian(
         ValueError: If ``insertion_constraints`` is ``True`` but
             ``ps_vessel`` or ``ns_vessel`` is empty.
     """
-    p_needle = translation(x_needle)
-    r_needle = rotation(x_needle)
+    p_needle_center = translation(x_needle_center)
+    r_needle_center = rotation(x_needle_center)
 
     Jr_needle = np.asarray(
-        DQ_Kinematics.rotation_jacobian(Jx_needle), dtype=np.float64
+        DQ_Kinematics.rotation_jacobian(Jx_needle_center), dtype=np.float64
     )
     Jt_needle = np.asarray(
-        DQ_Kinematics.translation_jacobian(Jx_needle, x_needle),
+        DQ_Kinematics.translation_jacobian(Jx_needle_center, x_needle_center),
         dtype=np.float64,
     )
     Jpi_needle = np.asarray(
-        DQ_Kinematics.plane_jacobian(Jx_needle, x_needle, j_),
+        DQ_Kinematics.plane_jacobian(Jx_needle_center, x_needle_center, k_),
         dtype=np.float64,
     )
 
@@ -311,7 +313,7 @@ def needle_jacobian(
             for p_vessel in ps_vessel:
                 J_radius = np.asarray(
                     DQ_Kinematics.point_to_point_distance_jacobian(
-                        Jt_needle, p_needle, p_vessel
+                        Jt_needle, p_needle_center, p_vessel
                     ),
                     dtype=np.float64,
                 )
@@ -324,18 +326,6 @@ def needle_jacobian(
                 W = np.vstack((J_radius, -J_radius, J_plane, -J_plane))
                 W_needle = np.vstack((W_needle, W)) if W_needle is not None else W
 
-        if ns_vessel is not None:
-            for i, n_vessel in enumerate(ns_vessel):
-                # Replaced by the depth-dependent orientation constraint.
-                if insertion_constraints and i == 0:
-                    continue
-
-                J_normal = normal_dot_product_jacobian(
-                    n_vessel, k_, r_needle, Jr_needle
-                )
-                W = np.vstack((J_normal, -J_normal))
-                W_needle = np.vstack((W_needle, W)) if W_needle is not None else W
-
         if insertion_constraints:
             if not ps_vessel or not ns_vessel:
                 raise ValueError(
@@ -343,8 +333,6 @@ def needle_jacobian(
                     "insertion constraints are enabled."
                 )
 
-            x_needle_tip = x_needle * needle_offset
-            Jx_needle_tip = haminus8(needle_offset) @ Jx_needle
             Jt_needle_tip = np.asarray(
                 DQ_Kinematics.translation_jacobian(
                     Jx_needle_tip, x_needle_tip
@@ -384,7 +372,7 @@ def needle_jacobian(
 
             W_phi = phi_z_constraint_W(
                 n_vessel,
-                r_needle,
+                r_needle_center,
                 Jr_needle,
                 h,
                 J_h,
@@ -401,13 +389,14 @@ def needle_jacobian(
             W_needle = np.vstack((W_needle, W)) if W_needle is not None else W
 
     if W_needle is None:
-        return np.empty((0, Jx_needle.shape[1]), dtype=np.float64)
+        return np.empty((0, Jx_needle_center.shape[1]), dtype=np.float64)
 
     return np.asarray(W_needle, dtype=np.float64)
 
 
 def needle_w(
-    x_needle: DQ,
+    x_needle_tip: DQ,
+    x_needle_center: DQ,
     ps_vessel: list[DQ],
     ns_vessel: list[DQ] | None,
     needle_radius: float,
@@ -428,7 +417,7 @@ def needle_w(
     QP enforces ``W @ q_dot <= w``. All rows are scaled by their VFI gain.
 
     Args:
-        x_needle: Dual-quaternion pose of the needle frame.
+        x_needle_center: Dual-quaternion pose of the needle frame.
         ps_vessel: Vessel positions as pure dual quaternions.
         ns_vessel: Vessel normals as pure dual quaternions, or ``None`` to
             skip orientation constraints.
@@ -456,8 +445,11 @@ def needle_w(
         ValueError: If ``insertion_constraints`` is ``True`` but
             ``ps_vessel`` or ``ns_vessel`` is empty.
     """
-    p_needle = translation(x_needle)
-    r_needle = rotation(x_needle)
+    p_needle_center = translation(x_needle_center)
+    r_needle_center = rotation(x_needle_center)
+    p_needle_tip = translation(x_needle_tip)
+    r_needle_tip = rotation(x_needle_tip)
+
     verbose = normalize_verbose(verbose)
     w_needle = None
 
@@ -467,7 +459,7 @@ def needle_w(
             for vessel_index, p_vessel in enumerate(ps_vessel):
                 current_radius_squared = float(
                     DQ_Geometry.point_to_point_squared_distance(
-                        p_needle,
+                        p_needle_center,
                         p_vessel,
                     )
                 )
@@ -488,8 +480,8 @@ def needle_w(
                         current_radius_squared - lower_radius_squared
                 )
 
-                n_needle = r_needle * k_ * conj(r_needle)
-                d_needle = dot(p_needle, n_needle)
+                n_needle = r_needle_center * k_ * conj(r_needle_center)
+                d_needle = dot(p_needle_center, n_needle)
                 pi_needle = n_needle + E_ * d_needle
 
                 current_plane_distance = float(
@@ -534,34 +526,7 @@ def needle_w(
                 ).reshape(-1, 1)
                 w_needle = np.vstack((w_needle, w)) if w_needle is not None else w
 
-        if ns_vessel is not None:
-            for normal_index, n_vessel in enumerate(ns_vessel):
-                # Must match the skipped rows in needle_jacobian().
-                if insertion_constraints and normal_index == 0:
-                    continue
 
-                current_dot = float(dot(n_vessel, Ad(r_needle, k_)).q[0])
-                max_dot = math.cos(math.pi / 2.0 - d_safe_angles)
-                min_dot = math.cos(math.pi / 2.0 + d_safe_angles)
-                dot_error_one = max_dot - current_dot
-                dot_error_two = current_dot - min_dot
-
-                debug_orientation(
-                    verbose,
-                    normal_index,
-                    current_dot,
-                    dot_error_one,
-                    dot_error_two,
-                )
-
-                w = np.array(
-                    [
-                        2.0 * vfi_gain_angles * dot_error_one,
-                        2.0 * vfi_gain_angles * dot_error_two,
-                    ],
-                    dtype=np.float64,
-                ).reshape(-1, 1)
-                w_needle = np.vstack((w_needle, w)) if w_needle is not None else w
 
         if insertion_constraints:
             if not ps_vessel or not ns_vessel:
@@ -570,7 +535,6 @@ def needle_w(
                     "insertion constraints are enabled."
                 )
 
-            x_needle_tip = x_needle * needle_offset
             n_vessel = ns_vessel[0]
             p_vessel = ps_vessel[0]
             line = n_vessel + E_ * cross(p_vessel, n_vessel)
@@ -599,7 +563,7 @@ def needle_w(
             )
             w_phi = phi_z_constraint_w(
                 n_vessel,
-                r_needle,
+                r_needle_tip,
                 h,
                 phi_min,
                 phi_max,
@@ -608,7 +572,7 @@ def needle_w(
                 phi_vfi_gain,
             )
 
-            current_dot = phi_z(n_vessel, r_needle)
+            current_dot = phi_z(n_vessel, r_needle_tip)
             safe_dot = dot_product_safe(
                 h, phi_min, phi_max, h_min, h_max
             )

@@ -135,20 +135,23 @@ class NeedleController(ICRA19TaskSpaceController):
         H, f, W, w = self._get_optimization_parameters(q, xd)
 
         # The relative transformation of the needle is time-constant
-        x = self.last_x
-        Jx = self.last_Jx
-        if x is None or Jx is None:
+        x_needle_tip = self.last_x
+        Jx_needle_tip = self.last_Jx
+        if x_needle_tip is None or Jx_needle_tip is None:
             raise RuntimeError(
                 "Internal error: last_x / last_Jx not set. "
                 "Did you call _get_optimization_parameters first?"
             )
-        Jx_needle = haminus8(self.relative_needle_pose) @ Jx
-        x_needle = x * self.relative_needle_pose
+
+        Jx_needle_center = haminus8(self.relative_needle_pose) @ Jx_needle_tip
+        x_needle_center = x_needle_tip * self.relative_needle_pose
 
         # VFI-related Jacobian
         W_needle = needle_jacobian(
-            Jx_needle,
-            x_needle,
+            Jx_needle_tip,
+            x_needle_tip,
+            Jx_needle_center,
+            x_needle_center,
             self.vessel_positions,
             self.vessel_normals if hasattr(self, "vessel_normals") else None,
             self.insertion_constraints,
@@ -156,7 +159,8 @@ class NeedleController(ICRA19TaskSpaceController):
         )
         # VFI w
         w_needle = needle_w(
-            x_needle=x_needle,
+            x_needle_tip=x_needle_tip,
+            x_needle_center=x_needle_center,
             ps_vessel=self.vessel_positions,
             ns_vessel=self.vessel_normals if hasattr(self, "vessel_normals") else None,
             needle_radius=self.needle_radius,

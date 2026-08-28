@@ -48,7 +48,7 @@ rcm_joint_index = 6
 
 sim = PedriatricSimulator.PediatricSimulator()
 sim.connect("127.0.0.1")
-sim.clear_frames()
+#sim.clear_frames()
 time.sleep(1)
 
 print("needle radius {}".format(sim.get_needle_radius()))
@@ -99,38 +99,33 @@ rrobot.set_upper_q_limit(upper_q_limit)
 
 rrcm = {"position": sim.get_right_trocar_sphere()[0], "radius": sim.get_right_trocar_sphere()[1]}
 
-translate = 1 + 0.5 * E_ * j_ * -0.0005
-angle = -math.pi / 2.0
-rotate1 = math.cos(angle / 2.0) + math.sin(angle / 2.0) * (i_ * 1.0 + j_ * 0.0 + k_ * 0.0)
-angle = math.pi / 2.0
-rotate2 = math.cos(angle / 2.0) + math.sin(angle / 2.0) * (i_ * 0.0 + j_ * 0.0 + k_ * 1.0)
-
-p1 = translate * sim.get_right_tube_target_point() * rotate1 * rotate2
+p1 = sim.get_right_tube_target_point() * (1 + 0.5 * E_ * j_ * -0.0005)
 sim.set_frame("p1", p1)
 
-needle_pose = sim.get_control_needle_pose()
-q = sim.get_right_robot_joints()
-ee = rrobot.fkm(q)
-relative_needle_pose = conj(ee) * needle_pose
 radius = sim.get_needle_radius()
 
-needle_tip_pose = sim.get_needle_frame_at(0.0)
-relative_needle_tip_pose = conj(ee) * needle_tip_pose
+w_to_needle_center = sim.get_control_needle_pose()
+q = sim.get_right_robot_joints()
+w_to_robot_ee = rrobot.fkm(q)
+w_to_needle_tip = sim.get_needle_frame_at(0.0)
 
-rrobot.set_effector(relative_needle_tip_pose)
+# Tip
+needle_center_to_needle_tip = conj(w_to_needle_center) * w_to_needle_tip
+needle_tip_to_needle_center = conj(needle_center_to_needle_tip)
+robot_ee_to_needle_tip = conj(w_to_robot_ee) * w_to_needle_tip
+rrobot.set_effector(robot_ee_to_needle_tip)
 
+# Vessel normals are always j_ in this world
 v = j_
-n = Ad(rotation(needle_pose), k_)
-n1 = Ad(rotation(p1), k_)
 
 safety_set_controller = NeedleController(
         kinematics=rrobot,
-        gain=100.0,
-        damping=np.diag([1,1,1,1,1,1,0,0,0]),
+        gain=1000.0,
+        damping=np.diag([1,1,1,1,1,1,0.000001,0.000001,0.000001]),
         alpha=1.0,
         rcm_constraints=[
             (rrcm["position"], rrcm["radius"], rcm_joint_index)],
-        relative_needle_pose=relative_needle_pose,
+        relative_needle_pose=needle_tip_to_needle_center,
         vessel_positions=None,
         vessel_normals=None,
         needle_radius=None,
@@ -140,9 +135,7 @@ safety_set_controller = NeedleController(
     )
 
 q = sim.get_right_robot_joints()
-x_now = rrobot.fkm(q)
-xdc = None
-
+x = rrobot.fkm(q)
 print("Starting safety set controller loop...")
 for i in range(200):
     sim.set_frame("needle", sim.get_control_needle_pose())
@@ -151,13 +144,10 @@ for i in range(200):
     sim.set_frame("x", x)
 
     # controlled target pose
-    sim.set_frame("xd", x_now)
+    sim.set_frame("xd", x)
 
     for step in range(CONTROLLER_STEPS):
-        # Solve the quadratic program
-        u = safety_set_controller.compute_setpoint_control_signal(q, x_now)
-
-        # Update the current joint positions
+        u = safety_set_controller.compute_setpoint_control_signal(q, x)
         q = q + u * CONTROLLER_SAMPLING_TIME
 
     sim.set_right_robot_joints(q)
@@ -167,14 +157,14 @@ print("Safety set controller loop finished.")
 
 needle_positioning_controller = NeedleController(
         kinematics=rrobot,
-        gain=100.0,
+        gain=1000.0,
         damping=np.diag([1,1,1,1,1,1,0.000001,0.000001,0.000001]),
         alpha=1.0,
         rcm_constraints=[
             (rrcm["position"], rrcm["radius"], rcm_joint_index)],
-        relative_needle_pose=relative_needle_pose,
+        relative_needle_pose=needle_tip_to_needle_center,
         vessel_positions=[translation(p1)],
-        vessel_normals=[n1],
+        vessel_normals=[v],
         needle_radius=None,
         d_safe_angles=None,
         vfi_gain=1.0,
@@ -183,24 +173,18 @@ needle_positioning_controller = NeedleController(
     )
 
 q = sim.get_right_robot_joints()
-xdc = None
-
 print("Starting needle positioning loop...")
 for i in range(500):
+    xd = p1
+
     sim.set_frame("needle", sim.get_control_needle_pose())
 
     x = rrobot.fkm(q)
     sim.set_frame("x", x)
-
-    # controlled target pose
-    xdc = p1
-    sim.set_frame("xd", xdc)
+    sim.set_frame("xd", xd)
 
     for step in range(CONTROLLER_STEPS):
-        # Solve the quadratic program
-        u = needle_positioning_controller.compute_setpoint_control_signal(q, xdc)
-
-        # Update the current joint positions
+        u = needle_positioning_controller.compute_setpoint_control_signal(q, xd)
         q = q + u * CONTROLLER_SAMPLING_TIME
 
     sim.set_right_robot_joints(q)
@@ -215,7 +199,7 @@ needle_driving_1_controller = NeedleController(
         alpha=0.999,
         rcm_constraints=[
             (rrcm["position"], rrcm["radius"], rcm_joint_index)],
-        relative_needle_pose=relative_needle_pose,
+        relative_needle_pose=needle_tip_to_needle_center,
         vessel_positions=[translation(p1)],
         vessel_normals=[v],
         needle_radius=radius,
