@@ -1,31 +1,29 @@
 """Shared pytest configuration for the needlemanipulation test suite.
 
-The package ``__init__`` imports the compiled ``_core`` extension (and the
-``marinholab.solvers.qpoases`` dependency). When tests run from the repository
-root the repository's ``marinholab`` package shadows the installed one, so we:
+The package ``__init__`` re-exports ``SerialManipulatorSimulatorFriendly``
+from ``marinholab.sas.core.modeling`` — the compiled pybind11 extension that
+now ships in the separate ``marinholab-sas-core`` package (the model moved
+out of this repository). When tests run from the repository root, the
+repository's ``marinholab`` package (which only ships ``marinholab.working``)
+shadows the installed one, so we:
 
-1. import ``dqrobotics`` first (the ``_core`` extension subclasses its
+1. import ``dqrobotics`` first (the sas-core extension subclasses its
    pybind11 types, so the base types must be registered);
 2. merge the installed ``marinholab`` directory into the top-level package's
-   search path so sub-packages such as ``marinholab.solvers`` resolve;
-3. import the compiled ``_core`` extension (loading the installed ``.so``
-   directly when the repository checkout has no build of its own) and register
-   it as ``marinholab.working.needlemanipulation._core`` before the package
-   ``__init__`` runs;
-4. only as a last resort (no compiled extension available at all) register a
-   mock ``_core`` so the pure-Python controller / Jacobian logic stays
-   importable and testable.
+   search path so sub-packages such as ``marinholab.sas`` resolve;
+3. check that ``marinholab.sas.core.modeling`` is importable. If
+   ``marinholab-sas-core`` is not installed (a bare dev checkout), install a
+   mock so the pure-Python controller / Jacobian logic stays importable and
+   testable.
 
-``CORE_AVAILABLE`` records whether the real compiled extension was usable.
+``CORE_AVAILABLE`` records whether the real modeling extension was usable.
 """
 from __future__ import annotations
 
-import glob
-import importlib.util
 import os
 import site
 import sys
-from typing import Optional
+import types
 from unittest.mock import MagicMock
 
 
@@ -42,7 +40,13 @@ def _site_dirs() -> list[str]:
 
 
 def _merge_marinholab_site_packages() -> None:
-    """Expose installed ``marinholab.*`` sub-packages under the repo package."""
+    """Expose the installed ``marinholab.*`` sub-packages under the repo package.
+
+    The repo checkout provides ``marinholab.working``; the installed
+    ``marinholab-sas-core`` provides ``marinholab.sas``. Merging the installed
+    ``marinholab`` directory into the repo package's ``__path__`` lets both
+    sub-packages resolve when the repo shadows the installed one.
+    """
     try:
         import marinholab
     except Exception:
@@ -57,67 +61,40 @@ def _merge_marinholab_site_packages() -> None:
             marinholab.__path__.append(d)
 
 
-def _installed_core_so() -> Optional[str]:
-    """Path to an installed ``_core`` extension, if any."""
-    for sp in _site_dirs():
-        base = os.path.abspath(
-            os.path.join(sp, "marinholab", "working", "needlemanipulation")
-        )
-        for pat in ("_core*.so", "_core*.pyd", "_core*.dll"):
-            hits = sorted(glob.glob(os.path.join(base, pat)))
-            if hits:
-                return hits[0]
-    return None
+def _install_modeling_mock() -> None:
+    """Register a mock ``marinholab.sas.core.modeling`` so the package
+    ``__init__`` (which re-exports from it) can import when
+    ``marinholab-sas-core`` is not installed."""
+    for name in (
+        "marinholab.sas",
+        "marinholab.sas.core",
+        "marinholab.sas.core.modeling",
+    ):
+        if name not in sys.modules:
+            sys.modules[name] = types.ModuleType(name)
+
+    modeling = sys.modules["marinholab.sas.core.modeling"]
+    modeling.SerialManipulatorSimulatorFriendly = MagicMock()
+    modeling.ActuationType = MagicMock()
 
 
-def _load_real_core() -> bool:
-    """Load the compiled ``_core`` extension and register it under the repo
-    submodule name. Returns ``True`` on success."""
-    so = _installed_core_so()
-    if so is None:
-        return False
-    try:
-        import dqrobotics  # noqa: F401  register base pybind11 types
-    except Exception:
-        return False
-    _merge_marinholab_site_packages()
-    try:
-        import marinholab.working.needlemanipulation._core  # noqa: F401
-        return True
-    except Exception:
-        pass
-    name = "marinholab.working.needlemanipulation._core"
-    try:
-        spec = importlib.util.spec_from_file_location(name, so)
-        if spec is None or spec.loader is None:
-            return False
-        mod = importlib.util.module_from_spec(spec)
-        sys.modules[name] = mod
-        spec.loader.exec_module(mod)
-        return True
-    except Exception:
-        return False
-
-
-def _install_core_mock() -> None:
-    mock_core = MagicMock()
-    mock_core.M3_SerialManipulatorSimulatorFriendly = MagicMock()
-    sys.modules["marinholab.working.needlemanipulation._core"] = mock_core
-
-
-def _ensure_core_available() -> bool:
+def _ensure_modeling_available() -> bool:
+    """Return True if the real ``marinholab.sas.core.modeling`` is importable;
+    otherwise install a mock and return False."""
     try:
         import dqrobotics  # noqa: F401
     except Exception:
         pass
     _merge_marinholab_site_packages()
-    if _load_real_core():
+    try:
+        import marinholab.sas.core.modeling  # noqa: F401
         return True
-    _install_core_mock()
-    return False
+    except Exception:
+        _install_modeling_mock()
+        return False
 
 
-CORE_AVAILABLE: bool = _ensure_core_available()
+CORE_AVAILABLE: bool = _ensure_modeling_available()
 
 
 import pytest  # noqa: E402  (imported after sys.modules patching)
@@ -125,5 +102,6 @@ import pytest  # noqa: E402  (imported after sys.modules patching)
 
 @pytest.fixture(scope="session")
 def core_available() -> bool:
-    """Whether the compiled ``_core`` extension is importable."""
+    """Whether the real modeling extension (``marinholab.sas.core.modeling``)
+    is importable."""
     return CORE_AVAILABLE

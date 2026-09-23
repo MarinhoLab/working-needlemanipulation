@@ -14,8 +14,11 @@ insertion constraints).
 pip install marinholab-working-needlemanipulation
 ```
 
-Building from source needs `cmake`, `ninja`, `g++`, Eigen3 and initialised git
-submodules — see [`AGENTS.md`](AGENTS.md).
+This is a pure-Python package. The serial-manipulator kinematics model
+(`SerialManipulatorSimulatorFriendly`, re-exported here as
+`M3_SerialManipulatorSimulatorFriendly` for backward compatibility) is provided
+by the `marinholab-sas-core` dependency, so no C++ toolchain or git submodules
+are needed to build it. See [`AGENTS.md`](AGENTS.md).
 
 ## Usage
 

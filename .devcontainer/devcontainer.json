@@ -9,7 +9,7 @@
       "backend" : "PyCharm"
     }
   },
-  "postCreateCommand": "cd /IdeaProjects/working-needlemanipulation && git config --global --add safe.directory /IdeaProjects/working-needlemanipulation && git submodule update --init --recursive",
+  "postCreateCommand": "cd /IdeaProjects/working-needlemanipulation && git config --global --add safe.directory /IdeaProjects/working-needlemanipulation",
   // Comment out to connect as the root user.
   // remoteUser: "ubuntu"
 }
