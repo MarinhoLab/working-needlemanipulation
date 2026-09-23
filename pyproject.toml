@@ -3,8 +3,6 @@ requires = [
     "setuptools>=42",
     "wheel",
     "setuptools-git-versioning>=2.0,<3",
-    "ninja",
-    "cmake>=3.15",
 ]
 build-backend = "setuptools.build_meta"
 
@@ -23,6 +21,7 @@ maintainers = [
 dynamic = ["version"]
 dependencies = [
     "dqrobotics>=23.4.0a49",
+    "marinholab-sas-core",
     "marinholab-solvers-qpoases",
     "termcolor",
     "pyyaml",

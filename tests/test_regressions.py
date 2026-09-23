@@ -10,8 +10,9 @@ These target the three concrete bugs:
 3. ``example_plot`` reading a ``"diameter"`` key that the loader never
    produces — it must read ``"radius"``.
 
-The ``_core``-dependent tests are skipped when the compiled extension is not
-available (see :mod:`tests.conftest`).
+The modeling-extension-dependent tests are skipped when
+``marinholab.sas.core.modeling`` is not importable (see
+:mod:`tests.conftest`).
 """
 from __future__ import annotations
 
@@ -88,9 +89,11 @@ def test_m3_default_limits_are_finite_and_ordered(loaded):
 
 def test_m3_default_limits_via_direct_construction(core_available):
     # Also exercise the C++ constructor directly (bypasses the YAML loader).
-    pytest.importorskip("marinholab.working.needlemanipulation._core")
+    # The model now ships in the separate ``marinholab-sas-core`` package;
+    # ``core_available`` reflects whether ``marinholab.sas.core.modeling``
+    # could be imported (see :mod:`tests.conftest`).
     if not core_available:
-        pytest.skip("compiled _core extension not available")
+        pytest.skip("marinholab-sas-core not importable")
 
     n = 5
     rx = M3_SerialManipulatorSimulatorFriendly.ActuationType.RX

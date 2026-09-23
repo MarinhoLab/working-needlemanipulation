@@ -2,39 +2,25 @@
 
 Repository-specific notes for working in `MarinhoLab/working-needlemanipulation`.
 
-## Building the C++ extension (`_core`)
+## Building / installing the package
 
-`_core` is a pybind11 module built by CMake — `setup.py` drives CMake through
-`setuptools`, and `CMakeLists.txt` compiles `src/core.cpp` +
-`src/M3_SerialManipulatorSimulatorFriendly.cpp`.
+This package is **pure Python** — there is no in-repo C++ extension to build.
+The `SerialManipulatorSimulatorFriendly` kinematics model used by the
+controllers moved to the **`marinholab-sas-core`** package (the pybind11
+bindings for `marinholab_sas_core`), which is now a declared runtime
+dependency. The only thing installed from this repository is the
+`marinholab.working.needlemanipulation` Python package.
 
-Building requires:
-
-- `cmake` (≥3.15), `ninja` and `g++` on `PATH`.
-- **Eigen3** — `CMakeLists.txt` runs `find_package(Eigen3 REQUIRED)` and links
-  `Eigen3::Eigen`. Debian/Ubuntu: `sudo apt-get install libeigen3-dev` (the CI
-  build job does this; on Windows it is pulled in via vcpkg).
-- **Initialised git submodules** — `submodules/pybind11` (v3.0) and
-  `submodules/dqrobotics/cpp` are pulled in with `add_subdirectory`. A plain
-  clone has empty submodule dirs, so run:
-
-  ```
-  git submodule update --init --recursive
-  ```
-
-- The **version is taken from git tags** (`setuptools-git-versioning`,
-  `dynamic = ["version"]` in `pyproject.toml`), so an untagged checkout
-  produces a dev version.
-
-Then install with:
+Install with:
 
 ```
-pip install . --no-build-isolation
+pip install .
 ```
 
-On **aarch64/arm64** builds, `setup.py` appends `-ffp-contract=off` so the
-floating-point results match the reference MATLAB behaviour — do not strip
-that flag.
+Build requires `setuptools`, `wheel` and `setuptools-git-versioning`
+(declared in `[build-system]` in `pyproject.toml`). The **version is taken
+from git tags** (`setuptools-git-versioning`, `dynamic = ["version"]`), so an
+untagged checkout produces a dev version.
 
 ## QP solver (`marinholab-solvers-qpoases`)
 
@@ -82,57 +68,38 @@ controllers are driven in a closed loop, not as a test suite.
 
 ## Tests
 
-There is **no repository test suite** — `tests/` was removed together with
-the `simulator_tests` merge (the old `conftest.py` mocked `_core` and is no
-longer present). There is also no dedicated CI `test` job; the workflow only
-runs `build` (matrix wheel builds) and `publish`. To smoke-test a change
-locally, build the package (see the build section) and exercise the controller
-API:
+`tests/` holds the pytest suite. `conftest.py` imports `dqrobotics` first
+(the sas-core extension subclasses its pybind11 types, so the base types must
+be registered), merges the installed `marinholab` site-packages into the
+repo package's `__path__` so `marinholab.sas` resolves, and records in
+`CORE_AVAILABLE` whether `marinholab.sas.core.modeling` is importable. When
+`marinholab-sas-core` is not installed (a bare dev checkout), a mock is
+installed so the pure-Python controller / Jacobian tests still run; the
+modeling-dependent tests are then skipped.
+
+Run the suite from the repo root with `marinholab-sas-core` and
+`marinholab-solvers-qpoases` installed in the same environment:
 
 ```
-python -c "
-from importlib.resources import files
-from dqrobotics import DQ
-from marinholab.working.needlemanipulation import NeedleController
-from marinholab.working.needlemanipulation.example_load_from_file import get_information_from_file
-r, r1, r2 = get_information_from_file(files('marinholab.working.needlemanipulation').joinpath('left_robot.yaml').read_text())
-c = NeedleController(r, 10.0, 0.01, 0.999, [(r1['position'], r1['radius'], 6)],
-    DQ([1]), [DQ([1,2,3])], 0.003, insertion_constraints=True)
-H, f, W, w = c._get_optimization_parameters([0.0]*9, r.fkm([0.0]*9))
-print(W.shape)
-"
+pytest
 ```
 
-> **Run it from outside the repo root** (e.g. `cd /tmp`). Running it from the
-> repo root makes `import marinholab` resolve to the **source** tree, which
-> does not contain the compiled `_core` extension, so the import fails. Run it
-> from the repo root only after building `_core` in-place.
+## CI
 
-## CI build job: do not cache `build/`
+The workflow (`.github/workflows/python-publish.yml`) builds a **pure-Python**
+wheel in a matrix (Ubuntu / Ubuntu-aarch64 / Windows × Python 3.10/3.11/3.12)
+and publishes to PyPI on push to `main`. Because there is no in-repo C++
+extension:
 
-The C++ build configures CMake with its binary directory inside `build/`, so
-`build/CMakeCache.txt` pins the exact Python path from
-`/opt/hostedtoolcache` (e.g. `.../Python/3.12.13/x64`) at configure time. The
-cache key for that directory used to be keyed on the minor Python version
-(3.10/3.11/3.12) plus source-file hashes, so after a runner-image Python
-update (3.12.13 -> 3.12.14) the restored cache pointed at a deleted install
-dir and configure failed with
-`Could NOT find Python ... Cannot run the interpreter ...` (the `-DPYTHON_EXECUTABLE`
-CLI flag cannot override an existing `CMakeCache.txt` entry). This made the
-failing matrix cells vary between runs and is NOT a pybind11/CMake 4.x
-incompatibility. Fix: the workflow caches only the pip cache, not `build/`.
-
-## CI publish job: Linux wheels must be `manylinux`-tagged
-
-`_core` is a binary extension, so the Linux wheels are binary wheels too.
-PyPI's upload endpoint rejects binary wheels with a `linux_x86_64`/
-`linux_aarch64` platform tag with HTTP 400 `unsupported platform tag` — they
-must carry a PEP 600 `manylinux` tag. That is why the build job runs
-`auditwheel repair --plat auto` (and installs `patchelf`) on Linux before
-uploading the artifact. Do not drop that step, and do not hand a pinned
-`manylinux_2_X` tag: `--plat auto` derives the tag from the wheel's actual
-symbols (e.g. `manylinux_2_24`), while a pinned glibc-based tag that is
-stricter than the symbols allow makes `repair` fail the build.
+- The wheels are **pure Python** (no binary extension), so the Linux wheels
+  are not binary wheels and `auditwheel repair` is **not** required.
+- There is no CMake `build/` cache to worry about; the workflow caches only
+  the pip wheel cache.
+- Runtime dependencies (`dqrobotics`, `marinholab-sas-core`,
+  `marinholab-solvers-qpoases`, ...) are pulled from PyPI; the build job
+  itself installs `libeigen3-dev`/`build-essential` on Linux only so the
+  *dependency* wheels that need a C++ toolchain (e.g. `dqrobotics`'s
+  prebuilt wheels may still require a linker) can be validated.
 
 ## Type checking with pyright (and the `stubs/` package)
 
@@ -147,6 +114,11 @@ dependencies are not installed, pyright can additionally report
 imports; those are an environment issue, not a regression. Run the check with
 the dependencies installed (see the build section); any *other* warning or any
 error is a regression to fix.
+
+`marinholab.sas.core.modeling` (the `SerialManipulatorSimulatorFriendly`
+binding, now provided by the `marinholab-sas-core` package) ships its own
+typed `.pyi` stubs as package data, so pyright resolves its types from the
+installed package — no stubs are needed here for it.
 
 The package depends on the third-party **`dqrobotics`** library, which is a
 compiled pybind11 extension that ships **no `py.typed` marker and no `.pyi`
@@ -186,14 +158,13 @@ All shipped Python is fully annotated and documented:
   (or `X | None`) where a value may be `None`; never annotate a mutable
   default with a type that `None` can't satisfy.
 - **Docstrings** follow the Doxygen-style form used across the repo: a short
-  one-line summary, then `Args:`, `Returns:`/`Return:`, and `Raises:`
-  blocks as applicable. Module docstrings open with the copyright header and
-  a one-paragraph description of what the module provides.
-- **C++** sources use Doxygen `@file` / `@brief` / `@param` / `@return` /
-  `@throws` comments on the public API and the non-trivial protected
-  helpers (see `include/M3_SerialManipulatorSimulatorFriendly.h` and
-  `src/M3_SerialManipulatorSimulatorFriendly.cpp`).
-- The C++ `_core` extension's Python-visible surface is documented via the
-  `m.doc()` Sphinx text in `src/core.cpp` and the `_core.pyi` type stub;
-  keep the two consistent when the API changes.
+  one-line summary, then `Args:`, `Returns:`, and `Raises:` blocks as
+  applicable. Module docstrings open with a one-paragraph description of what
+  the module provides.
+- The `SerialManipulatorSimulatorFriendly` kinematics model lives in the
+  **`marinholab-sas-core`** package (`marinholab.sas.core.modeling`), not in
+  this repository; this repo re-exports it (and the
+  `M3_SerialManipulatorSimulatorFriendly` backward-compatibility alias) in
+  `marinholab/working/needlemanipulation/__init__.py`. Its Python-visible
+  surface is documented by that package's stubs.
 
