@@ -20,39 +20,17 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Init submodules
-        run: |
-          git submodule update --init --recursive
-      # cache: pip caches the global pip wheel cache; the key is
-      # setup-python-<os>-pip-<hash of pyproject.toml> (auto-detected).
-      # This is safe for a pure download cache (unlike the old build/
-      # CMake cache, it contains no paths or compiled state).
+      # The wheel is pure Python — there is no in-repo C++ extension to build
+      # (the kinematics model ships in the `marinholab-sas-core` dependency).
+      # `python -m build` resolves `[build-system]` (setuptools, wheel,
+      # setuptools-git-versioning) in an isolated environment. Only the pip
+      # wheel cache is cached; there is no CMake `build/` cache to worry about.
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
 
-      # ── Ubuntu dependencies ──────────────────────────────────────
-      # patchelf is a native prerequisite of `auditwheel repair` below.
-      - name: Install system dependencies (Ubuntu)
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libeigen3-dev build-essential patchelf
-
-      # ── Windows dependencies ─────────────────────────────────────
-      - name: Install compilation dependencies (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          cd C:\vcpkg
-          .\bootstrap-vcpkg.bat
-          vcpkg integrate install
-          vcpkg install eigen3:x64-windows
-          cmd /c mklink /d c:\Tools\vcpkg c:\vcpkg 2>$null || true
-          cd ~
-
-      # ── Build ────────────────────────────────────────────────────
       - name: Install build tool
         run: |
           python -m pip install --upgrade pip
@@ -60,27 +38,6 @@ jobs:
       - name: Build wheel
         run: |
           python -m build --wheel
-
-      # PyPI rejects binary wheels tagged `linux_x86_64`/`linux_aarch64`
-      # (it requires a PEP 600 `manylinux` tag). auditwheel relinks the
-      # extension against system libs, bundles anything it can't, and
-      # retags it as `manylinux_*`.
-      # - --plat auto picks the tightest compatible tag from the wheel's
-      #   actual symbols (e.g. manylinux_2_24) — hardcoding a glibc-based
-      #   tag can fail the build. repair also fails on unsupported
-      #   symbols, which gates the build.
-      # - The input glob must stay arch-scoped: a repaired
-      #   `manylinux_2_X_<arch>.whl` still matches a bare `*linux_*.whl`
-      #   but never `*linux_<arch>.whl`, so re-running can't pick it up.
-      # - repair leaves the original wheel in dist/, so the `linux_*`
-      #   wheel is removed before upload (would be a second 400 on PyPI).
-      - name: Repair wheel (Linux, manylinux tag)
-        if: runner.os == 'Linux'
-        run: |
-          pip install auditwheel
-          arch=$([[ "${{ matrix.os }}" == "ubuntu-latest" ]] && echo x86_64 || echo aarch64)
-          auditwheel repair --plat auto -w dist/ dist/*linux_${arch}.whl
-          rm -f dist/*linux_${arch}.whl
 
       - name: Upload wheel artifact
         uses: actions/upload-artifact@v4
