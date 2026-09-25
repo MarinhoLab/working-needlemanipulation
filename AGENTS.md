@@ -142,7 +142,6 @@ stubs/dqrobotics/
     __init__.pyi            # DQ + math helpers (i_, j_, k_, E_, conj, dot, ...)
     robot_modeling/__init__.pyi   # DQ_SerialManipulator, DQ_Kinematics
     utils/__init__.pyi      # DQ_Geometry
-    solvers/__init__.pyi    # DQ_QuadraticProgrammingSolver
 ```
 
 pyright is pointed at it via `stubPath = "stubs"` in `pyproject.toml`, so it
