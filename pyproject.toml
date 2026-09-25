@@ -21,7 +21,10 @@ maintainers = [
 dynamic = ["version"]
 dependencies = [
     "dqrobotics>=23.4.0a49",
-    "marinholab-sas-core",
+    # The ICRA 2019 task-space controller (``Controller``) ships in
+    # ``marinholab.sas.core.papers.icra2019``; that subpackage was added in
+    # 26.9.8, so pin to it to guarantee the import resolves.
+    "marinholab-sas-core>=26.9.8",
     "marinholab-solvers-qpoases",
     "termcolor",
     "pyyaml",

@@ -10,7 +10,7 @@ from dqrobotics import rotation
 import PedriatricSimulator
 import time
 from marinholab.working.needlemanipulation.example_load_from_file import get_information_from_file
-from marinholab.working.needlemanipulation.icra2019_controller import ICRA19TaskSpaceController
+from marinholab.sas.core.papers.icra2019 import Controller
 from marinholab.working.needlemanipulation import NeedleController
 
 from marinholab.working.needlemanipulation import M3_SerialManipulatorSimulatorFriendly
@@ -64,7 +64,7 @@ rrcm2 = {"position": sim.get_right_trocar_sphere()[0], "radius": sim.get_right_t
 print(rrcm1)
 print(rrcm2)
 
-controller = ICRA19TaskSpaceController(
+controller = Controller(
     kinematics=rrobot,
     gain=100.0,
     damping=np.diag([1,1,1,1,1,1,0,0,0]),

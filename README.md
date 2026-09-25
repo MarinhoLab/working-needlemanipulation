@@ -26,11 +26,16 @@ The public API is exposed at the package root:
 
 ```python
 from marinholab.working.needlemanipulation import (
-    ICRA19TaskSpaceController,   # QP task-space control (RCM + joint limits)
-    NeedleController,            # adds vessel VFI + insertion constraints
+    Controller,                        # QP task-space control (RCM + joint limits)
+    NeedleController,                  # adds vessel VFI + insertion constraints
     M3_SerialManipulatorSimulatorFriendly,  # serial-manipulator model
 )
 ```
+
+`Controller` is the ICRA 2019 task-space controller and is re-exported from
+`marinholab.sas.core.papers.icra2019` (it now ships in the
+`marinholab-sas-core` dependency). `ICRA19TaskSpaceController` is kept as a
+backward-compatible alias for it.
 
 Three examples are installed as commands:
 

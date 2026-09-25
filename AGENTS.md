@@ -29,10 +29,15 @@ The controllers solve the velocity QP with
 package (a qpOASES wrapper that ships prebuilt binaries). It is a **declared
 runtime dependency** (`pyproject.toml`) and is installed alongside the package.
 
-`icra2019_controller.py` does `from marinholab.solvers.qpoases import Solver`
+The ICRA 2019 task-space controller (`Controller`, re-exported here as
+`ICRA19TaskSpaceController`) now lives in the **`marinholab-sas-core`**
+package at `marinholab.sas.core.papers.icra2019`. It does
+`from marinholab.solvers.qpoases import Solver`
 and stores it as `self.qp_solver`. Its
 `solve_quadratic_program(H, f, A, b, Aeq, beq)` accepts `A=None`/`Aeq=None`
 and returns the solution `x`, so the controller call sites are unchanged.
+`NeedleController` (in this package) subclasses that `Controller` and stacks
+the vessel VFI constraints on top of it.
 
 ## Constraint debug output (`_debug` and `verbose`)
 
@@ -49,12 +54,14 @@ The available categories are `radius`, `plane`, `orientation`, `insertion` and
 - `False` — print nothing (the default);
 - `{"rcm": True, ...}` — select categories by name.
 
-Both `ICRA19TaskSpaceController` and `NeedleController` accept `verbose=` and
-normalise it via `normalize_verbose` at the controller boundary, so the
+`NeedleController` accepts `verbose=` and normalises it via the local
+`normalize_verbose` (all five categories) at the controller boundary, so the
 per-constraint helpers (`debug_radius`, `debug_plane`, `debug_orientation`,
-`debug_insertion`, `debug_rcm`) each gate on their own category. To add a new
-category: extend `CONSTRAINT_CATEGORIES` and add a matching `debug_*` helper.
-Do not reintroduce per-constraint `verbose_*` kwargs — the single `verbose`
+`debug_insertion`, `debug_rcm`) each gate on their own category. The parent
+`Controller` (in `marinholab-sas-core`) only understands the `rcm` category,
+so `NeedleController` hands it the `rcm` flag alone. To add a new category:
+extend `CONSTRAINT_CATEGORIES` and add a matching `debug_*` helper. Do not
+reintroduce per-constraint `verbose_*` kwargs — the single `verbose`
 setting is the intended interface.
 
 ## Simulation scripts (`saul/`)

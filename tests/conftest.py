@@ -62,13 +62,21 @@ def _merge_marinholab_site_packages() -> None:
 
 
 def _install_modeling_mock() -> None:
-    """Register a mock ``marinholab.sas.core.modeling`` so the package
-    ``__init__`` (which re-exports from it) can import when
-    ``marinholab-sas-core`` is not installed."""
+    """Register mock ``marinholab.sas.core.*`` modules so the package
+    ``__init__`` can import when ``marinholab-sas-core`` is not installed.
+
+    The ``__init__`` re-exports from ``marinholab.sas.core.modeling`` (the
+    kinematics model) and ``marinholab.sas.core.papers.icra2019`` (the ICRA 2019
+    task-space ``Controller``), so both are mocked here. ``Controller`` is set
+    to the ``MagicMock`` *class* (not an instance) because
+    ``NeedleController`` subclasses it at import time.
+    """
     for name in (
         "marinholab.sas",
         "marinholab.sas.core",
         "marinholab.sas.core.modeling",
+        "marinholab.sas.core.papers",
+        "marinholab.sas.core.papers.icra2019",
     ):
         if name not in sys.modules:
             sys.modules[name] = types.ModuleType(name)
@@ -76,6 +84,9 @@ def _install_modeling_mock() -> None:
     modeling = sys.modules["marinholab.sas.core.modeling"]
     modeling.SerialManipulatorSimulatorFriendly = MagicMock()
     modeling.ActuationType = MagicMock()
+
+    icra2019 = sys.modules["marinholab.sas.core.papers.icra2019"]
+    icra2019.Controller = MagicMock
 
 
 def _ensure_modeling_available() -> bool:
