@@ -4,14 +4,15 @@ MIT License
 
 Example: load the 9-DOF "left robot" model and RCM constraint spheres from
 the bundled ``left_robot.yaml``, then run the
-:class:`ICRA19TaskSpaceController` on it for a short trajectory and save an
+:class:`marinholab.sas.core.papers.icra2019.Controller` on it for a short
+trajectory and save an
 MP4 animation (when the plotting backend is available).
 """
 from importlib.resources import files
 import yaml
 from dqrobotics import *
 from marinholab.working.needlemanipulation import M3_SerialManipulatorSimulatorFriendly
-from marinholab.working.needlemanipulation.icra2019_controller import ICRA19TaskSpaceController
+from marinholab.sas.core.papers.icra2019 import Controller
 try:
     import dqrobotics_extensions.pyplot as dqp
     from matplotlib import pyplot as plt
@@ -161,8 +162,8 @@ def main() -> None:
     """Run the end-to-end example.
 
     Loads the bundled ``left_robot.yaml`` via
-    :func:`get_information_from_file`, constructs an
-    :class:`ICRA19TaskSpaceController` with the two RCM constraints from the
+    :func:`get_information_from_file`, constructs a
+    :class:`marinholab.sas.core.papers.icra2019.Controller` with the two RCM constraints from the
     YAML, steps the controller forward for ``time_final`` seconds at
     ``sampling_time`` resolution, and — when the plotting backend is
     available — records the resulting trajectory as an MP4 animation.
@@ -181,7 +182,7 @@ def main() -> None:
         lrobot.set_lower_q_limit([-85, -85, 5, -265, -85, -355, -170, -30, -30])
         lrobot.set_upper_q_limit([85, 85, 120, 0, 85, 355, 170, 30, 30])
 
-        controller = ICRA19TaskSpaceController(
+        controller = Controller(
             kinematics=lrobot,
             gain=10.0,
             damping=0.01,

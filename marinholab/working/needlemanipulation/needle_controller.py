@@ -3,7 +3,8 @@ Copyright (C) 2025 Murilo Marques Marinho (www.murilomarinho.info)
 MIT License
 
 Needle manipulation controller. Extends
-:class:`ICRA19TaskSpaceController` with VFI constraints that keep the needle
+:class:`marinholab.sas.core.papers.icra2019.Controller` with VFI constraints that
+keep the needle
 inside the safe volume around one or more vessel primitives and (optionally)
 within a depth-dependent angular insertion band.
 """
@@ -14,15 +15,17 @@ import numpy as np
 from dqrobotics import *
 from dqrobotics.robot_modeling import DQ_SerialManipulator
 
+from marinholab.sas.core.papers.icra2019 import Controller
+from marinholab.working.needlemanipulation._debug import normalize_verbose
 from marinholab.working.needlemanipulation._impl import needle_jacobian, needle_w
-from marinholab.working.needlemanipulation.icra2019_controller import ICRA19TaskSpaceController
 
 
-class NeedleController(ICRA19TaskSpaceController):
+class NeedleController(Controller):
     """A task-space controller for needle insertion with vessel VFI constraints.
 
     Inherits the QP-based task-space control of
-    :class:`ICRA19TaskSpaceController` and stacks an additional set of VFI
+    :class:`marinholab.sas.core.papers.icra2019.Controller` and stacks an
+    additional set of VFI
     inequality constraints (see :mod:`marinholab.working.needlemanipulation._impl`)
     onto the joint-limit and RCM constraints before solving.
     """
@@ -77,6 +80,13 @@ class NeedleController(ICRA19TaskSpaceController):
                   distance margins (m).
                 * ``d_safe_angles`` (float) — safe angular margin (rad).
         """
+        # The parent (ICRA 2019 ``Controller``) knows only the "rcm" debug
+        # category; this class' VFI helpers use the full category set
+        # (radius/plane/orientation/insertion/rcm). Normalise the complete set
+        # here, hand the parent only the RCM flag it understands, and re-set
+        # ``self.verbose`` afterwards — the parent's ``normalize_verbose``
+        # overwrites it with its RCM-only dict.
+        needle_verbose = normalize_verbose(kwargs.pop("verbose", False))
         super().__init__(
             kinematics,
             gain,
@@ -84,8 +94,12 @@ class NeedleController(ICRA19TaskSpaceController):
             alpha,
             rcm_constraints,
             vfi_gain,
+            verbose=needle_verbose["rcm"],
             **kwargs,
         )
+        # The VFI constraint helpers (``needle_w``) gate on all five
+        # categories, so expose the full normalised dict for them.
+        self.verbose = needle_verbose
 
         # Optional per-category VFI gains and safety margins; if not
         # supplied, :meth:`compute_setpoint_control_signal` falls back to
@@ -133,7 +147,7 @@ class NeedleController(ICRA19TaskSpaceController):
             Exception: If ``xd`` is not a unit dual quaternion.
         """
         if not is_unit(xd):
-            raise Exception("ICRA19TaskSpaceController::compute_setpoint_control_signal::xd should be an unit dual "
+            raise Exception("Controller::compute_setpoint_control_signal::xd should be an unit dual "
                             "quaternion")
 
         H, f, W, w = self._get_optimization_parameters(q, xd)

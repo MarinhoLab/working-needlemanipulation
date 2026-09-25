@@ -22,7 +22,7 @@ import pytest
 from dqrobotics import DQ, k_
 from marinholab.working.needlemanipulation import (
     M3_SerialManipulatorSimulatorFriendly,
-    ICRA19TaskSpaceController,
+    Controller,
 )
 from marinholab.working.needlemanipulation.example_load_from_file import (
     get_information_from_file,
@@ -47,13 +47,17 @@ def loaded():
     )
 
 
-def test_rcm_margin_is_stacked_into_qp_rhs(loaded):
+def test_rcm_margin_is_stacked_into_qp_rhs(loaded, core_available):
+    # The ICRA 2019 ``Controller`` now ships in ``marinholab-sas-core``; skip
+    # when the compiled core (and thus the controller) is not importable.
+    if not core_available:
+        pytest.skip("marinholab-sas-core not importable")
     robot, r1, _ = loaded
     robot.set_lower_q_limit(list(_LOWER))
     robot.set_upper_q_limit(list(_UPPER))
 
     rcm = [(r1["position"], r1["radius"], _RC_IDX)]
-    ctrl = ICRA19TaskSpaceController(
+    ctrl = Controller(
         robot, gain=10.0, damping=0.01, alpha=0.999, rcm_constraints=rcm
     )
 

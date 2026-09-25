@@ -197,12 +197,15 @@ def test_haminus8_tool_frame_jacobian_transform(robot):
     assert err < 1e-9
 
 
-def test_get_rcm_constraint_matches_geometry(robot):
+def test_get_rcm_constraint_matches_geometry(robot, core_available):
     # Cross-check the controller's RCM margin against the closed-form geometry
     # so a future change to get_rcm_constraint cannot silently desync the QP
-    # right-hand side from the VFI margin.
-    from marinholab.working.needlemanipulation.icra2019_controller import (
-        ICRA19TaskSpaceController,
+    # right-hand side from the VFI margin. The ``Controller`` now ships in
+    # ``marinholab-sas-core``; skip when the compiled core is not importable.
+    if not core_available:
+        pytest.skip("marinholab-sas-core not importable")
+    from marinholab.sas.core.papers.icra2019 import (
+        Controller,
     )
 
     idx = 2
@@ -210,7 +213,7 @@ def test_get_rcm_constraint_matches_geometry(robot):
     x_idx = robot.fkm(_Q0, idx)
     r_safe = 0.5
     eta = 2.0
-    _, w = ICRA19TaskSpaceController.get_rcm_constraint(
+    _, w = Controller.get_rcm_constraint(
         Jx_idx, x_idx, k_, _P_POINT, r_safe, eta
     )
     # get_rcm_constraint spans the line along the primitive (k_) through the

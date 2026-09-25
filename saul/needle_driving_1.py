@@ -11,7 +11,6 @@ from dqrobotics import rotation
 import PedriatricSimulator
 import time
 from marinholab.working.needlemanipulation.example_load_from_file import get_information_from_file
-from marinholab.working.needlemanipulation.icra2019_controller import ICRA19TaskSpaceController
 from marinholab.working.needlemanipulation import NeedleController
 
 from marinholab.working.needlemanipulation import M3_SerialManipulatorSimulatorFriendly
